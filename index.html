@@ -1687,6 +1687,116 @@ body {
 #tab-flow .flow-arrows polygon.flow-link { pointer-events: auto; cursor: pointer; }
 #tab-flow .flow-arrows path.flow-link-hit { fill: none; stroke: transparent; stroke-width: 14; cursor: pointer; }
 #tab-flow .flow-arrows path.flow-temp { pointer-events: none; }
+#tab-flow .flow-step-lane.line-tool-on { cursor: crosshair; }
+.flow-tool-btn {
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d4ed8;
+  cursor: pointer;
+}
+.flow-tool-btn:hover { background: #dbeafe; }
+.flow-tool-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+#tab-flow .flow-node-box[data-shape="circle"],
+#tab-flow .flow-node-box[data-shape="circle"].size-s,
+#tab-flow .flow-node-box[data-shape="circle"].size-m,
+#tab-flow .flow-node-box[data-shape="circle"].size-l {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  background: #dbeafe;
+  border: 2px solid #3b82f6;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  box-shadow: none;
+}
+#tab-flow .flow-node-box[data-shape="circle"] .fn-letter {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1d4ed8;
+  line-height: 1;
+  pointer-events: none;
+}
+#tab-flow .flow-node-box[data-shape="circle"] .fn-title {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  min-width: 48px;
+  max-width: 140px;
+  overflow: visible;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+}
+#tab-flow .flow-node-box[data-shape="circle"] .fn-bubble {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  min-width: 56px;
+  max-width: 160px;
+  white-space: pre-wrap;
+  text-align: center;
+  color: #0f172a;
+  z-index: 6;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+#tab-flow .flow-node-box[data-shape="circle"] .fn-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  margin-left: -5px;
+  border: 5px solid transparent;
+  border-top-color: #ffffff;
+  filter: drop-shadow(0 1px 0 #94a3b8);
+}
+#tab-flow .flow-node-box[data-shape="circle"] .flow-port { opacity: 0; }
+#tab-flow .flow-node-box[data-shape="circle"]:hover .flow-port,
+#tab-flow .flow-node-box[data-shape="circle"] .flow-port.hot { opacity: 1; }
+#tab-flow .flow-node-box[data-shape="anchor"],
+#tab-flow .flow-node-box[data-shape="anchor"].size-s,
+#tab-flow .flow-node-box[data-shape="anchor"].size-m,
+#tab-flow .flow-node-box[data-shape="anchor"].size-l {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  max-width: 8px;
+  min-height: 8px;
+  padding: 0;
+  border-radius: 50%;
+  background: #7dd3fc;
+  border: 1px solid #38bdf8;
+  overflow: visible;
+  box-shadow: none;
+}
+#tab-flow .flow-node-box[data-shape="anchor"] .fn-title { display: none !important; }
+#tab-flow .flow-node-box[data-shape="anchor"] .flow-port { opacity: 0; }
+#tab-flow .flow-node-box[data-shape="anchor"]:hover .flow-port,
+#tab-flow .flow-node-box[data-shape="anchor"] .flow-port.hot { opacity: 1; }
 
 
 </style>
@@ -1749,6 +1859,7 @@ body {
         <button class="f-sub-btn" onclick="switchFlowSub('function')">기능 & 분기</button>
         <button class="f-sub-btn" onclick="switchFlowSub('screen')">화면 정보</button>
         <button class="f-sub-btn" onclick="switchFlowSub('scenario')">시나리오</button>
+        <button type="button" class="flow-tool-btn" id="btn-flow-line" onclick="toggleFlowLineTool()">직선 / Line</button>
       </div>
     </div>
 
@@ -2277,6 +2388,8 @@ function switchFlowSub(subId) {
   const tabHistory = { flow: [], storyboard: [], ia: [], screens: [] };
   const tabIndex = { flow: -1, storyboard: -1, ia: -1, screens: -1 };
   let restoring = false;
+  let flowLineTool = false;
+  let flowLineDraft = null;
   let typingTimer = 0;
   let lastDepthCell = null;
   let lastSheetCell = null;
@@ -2779,6 +2892,228 @@ function switchFlowSub(subId) {
     return box;
   }
 
+  function makeFlowCircle() {
+    const box = document.createElement('div');
+    box.className = 'flow-node-box shape-circle size-m';
+    box.dataset.shape = 'circle';
+    box.dataset.nid = uid('n');
+    box.dataset.size = 'm';
+    box.innerHTML = '<span class="fn-letter">F</span><div class="fn-title" contenteditable="false">단계 / Step</div>';
+    ensurePorts(box);
+    return box;
+  }
+
+  function makeFlowAnchor() {
+    const box = document.createElement('div');
+    box.className = 'flow-node-box shape-anchor';
+    box.dataset.shape = 'anchor';
+    box.dataset.nid = uid('n');
+    box.innerHTML = '<div class="fn-title"></div>';
+    ensurePorts(box);
+    return box;
+  }
+
+  function nodeCenter(node) {
+    return {
+      x: node.offsetLeft + (node.offsetWidth || 0) / 2,
+      y: node.offsetTop + (node.offsetHeight || 0) / 2
+    };
+  }
+
+  function projectOnSegment(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len2 = dx * dx + dy * dy;
+    if (!len2) return { x: x1, y: y1, t: 0 };
+    const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / len2));
+    return { x: x1 + t * dx, y: y1 + t * dy, t };
+  }
+
+  function snapOrtho(x0, y0, x1, y1) {
+    if (Math.abs(x1 - x0) >= Math.abs(y1 - y0)) return { x1: x1, y1: y0, axis: 'h' };
+    return { x1: x0, y1: y1, axis: 'v' };
+  }
+
+  function placeNodeCenter(node, cx, cy) {
+    const fallback = node.dataset.shape === 'circle' ? 36 : 8;
+    const w = node.offsetWidth || fallback;
+    const h = node.offsetHeight || fallback;
+    const x = Math.round(cx - w / 2);
+    const y = Math.round(cy - h / 2);
+    node.dataset.fx = String(x);
+    node.dataset.fy = String(y);
+    node.style.left = x + 'px';
+    node.style.top = y + 'px';
+  }
+
+  function addFlowBubble(node) {
+    if (!node) return null;
+    let bubble = node.querySelector('.fn-bubble');
+    if (!bubble) {
+      bubble = document.createElement('div');
+      bubble.className = 'fn-bubble';
+      bubble.contentEditable = 'true';
+      bubble.textContent = '말풍선 / Note';
+      node.appendChild(bubble);
+    }
+    bubble.contentEditable = 'true';
+    bubble.focus();
+    return bubble;
+  }
+
+  function setEdgeDash(lane, eid, dash) {
+    const edges = getEdges(lane);
+    const e = edges.find((x) => x.id === eid);
+    if (!e) return;
+    if (dash) e.dash = true;
+    else delete e.dash;
+    setEdges(lane, edges);
+    drawFlowArrows(lane);
+  }
+
+  function splitFlowEdgeAt(lane, eid, clientX, clientY) {
+    if (!lane || !eid) return;
+    const edges = getEdges(lane);
+    const e = edges.find((x) => x.id === eid);
+    if (!e) return;
+    const byId = Object.fromEntries([...lane.querySelectorAll('.flow-node-box')].map((n) => [ensureNodeId(n), n]));
+    const a = byId[e.from];
+    const b = byId[e.to];
+    if (!a || !b) return;
+    const c1 = nodeCenter(a);
+    const c2 = nodeCenter(b);
+    const pt = clientToWorld(lane, clientX, clientY);
+    const proj = projectOnSegment(pt.x, pt.y, c1.x, c1.y, c2.x, c2.y);
+    const world = ensureFlowWorld(lane);
+    const circle = makeFlowCircle();
+    world.appendChild(circle);
+    placeNodeCenter(circle, proj.x, proj.y);
+    const cid = ensureNodeId(circle);
+    const axis = e.axis || (e.ortho ? (Math.abs(c2.x - c1.x) >= Math.abs(c2.y - c1.y) ? 'h' : 'v') : null);
+    let e1to = axis === 'v' ? 't' : 'l';
+    let e2from = axis === 'v' ? 'b' : 'r';
+    if (axis === 'h' && c2.x < c1.x) { e1to = 'r'; e2from = 'l'; }
+    if (axis === 'v' && c2.y < c1.y) { e1to = 'b'; e2from = 't'; }
+    const e1 = { id: uid('e'), from: e.from, to: cid, fromPort: e.fromPort || (axis === 'v' ? 'b' : 'r'), toPort: e1to };
+    const e2 = { id: uid('e'), from: cid, to: e.to, fromPort: e2from, toPort: e.toPort || (axis === 'v' ? 't' : 'l') };
+    if (e.ortho) { e1.ortho = true; e2.ortho = true; e1.axis = axis; e2.axis = axis; }
+    if (e.dash) { e1.dash = true; e2.dash = true; }
+    setEdges(lane, edges.filter((x) => x.id !== eid).concat([e1, e2]));
+    ensurePorts(circle);
+    drawFlowArrows(lane);
+  }
+
+  function drawOrthoTemp(lane, x0, y0, x1, y1) {
+    const snapped = snapOrtho(x0, y0, x1, y1);
+    let svg = lane.querySelector('svg.flow-arrows');
+    if (!svg) {
+      drawFlowArrows(lane);
+      svg = lane.querySelector('svg.flow-arrows');
+    }
+    if (!svg) return;
+    svg.querySelectorAll('.flow-temp').forEach((el) => el.remove());
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('class', 'flow-temp');
+    path.setAttribute('d', 'M ' + x0 + ' ' + y0 + ' L ' + snapped.x1 + ' ' + snapped.y1);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', '#38bdf8');
+    path.setAttribute('stroke-width', '2.2');
+    svg.appendChild(path);
+  }
+
+  function persistOrthoLine(lane, x0, y0, x1, y1) {
+    const snapped = snapOrtho(x0, y0, x1, y1);
+    const svg = lane.querySelector('svg.flow-arrows');
+    if (svg) svg.querySelectorAll('.flow-temp').forEach((el) => el.remove());
+    if (Math.hypot(snapped.x1 - x0, snapped.y1 - y0) < 16) return;
+    pushTabHistory('flow');
+    const world = ensureFlowWorld(lane);
+    const a = makeFlowAnchor();
+    const b = makeFlowAnchor();
+    world.appendChild(a);
+    world.appendChild(b);
+    placeNodeCenter(a, x0, y0);
+    placeNodeCenter(b, snapped.x1, snapped.y1);
+    const axis = snapped.axis;
+    const fromPort = axis === 'h' ? (snapped.x1 >= x0 ? 'r' : 'l') : (snapped.y1 >= y0 ? 'b' : 't');
+    const toPort = axis === 'h' ? (snapped.x1 >= x0 ? 'l' : 'r') : (snapped.y1 >= y0 ? 't' : 'b');
+    const edges = getEdges(lane);
+    edges.push({
+      id: uid('e'),
+      from: ensureNodeId(a),
+      to: ensureNodeId(b),
+      fromPort,
+      toPort,
+      ortho: true,
+      axis
+    });
+    setEdges(lane, edges);
+    drawFlowArrows(lane);
+    saveLocal();
+  }
+
+  function constrainCircleToRail(lane, node, x, y) {
+    const w = node.offsetWidth || 36;
+    const h = node.offsetHeight || 36;
+    const nid = node.dataset.nid;
+    const byId = Object.fromEntries([...lane.querySelectorAll('.flow-node-box')].map((n) => [n.dataset.nid, n]));
+    const edges = getEdges(lane).filter((e) => e.ortho && (e.from === nid || e.to === nid));
+    if (!edges.length) return { x, y, hit: false };
+    const first = edges[0];
+    const axis = first.axis || (['l', 'r'].includes(first.fromPort) || ['l', 'r'].includes(first.toPort) ? 'h' : 'v');
+    const others = [];
+    edges.forEach((e) => {
+      const o = byId[e.from === nid ? e.to : e.from];
+      if (o && o !== node) others.push(o);
+    });
+    if (!others.length) return { x, y, hit: false };
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    if (axis === 'h') {
+      const railY = others[0].offsetTop + others[0].offsetHeight / 2;
+      const xs = others.map((o) => o.offsetLeft + o.offsetWidth / 2);
+      const lo = Math.min.apply(null, xs);
+      const hi = Math.max.apply(null, xs);
+      const ncx = others.length === 1 ? cx : Math.max(lo, Math.min(hi, cx));
+      return { x: ncx - w / 2, y: railY - h / 2, hit: true };
+    }
+    const railX = others[0].offsetLeft + others[0].offsetWidth / 2;
+    const ys = others.map((o) => o.offsetTop + o.offsetHeight / 2);
+    const lo = Math.min.apply(null, ys);
+    const hi = Math.max.apply(null, ys);
+    const ncy = others.length === 1 ? cy : Math.max(lo, Math.min(hi, cy));
+    return { x: railX - w / 2, y: ncy - h / 2, hit: true };
+  }
+
+  function syncFlowLineToolUi() {
+    document.querySelectorAll('.flow-tool-btn').forEach((b) => b.classList.toggle('active', flowLineTool));
+    document.querySelectorAll('#tab-flow .flow-step-lane').forEach((lane) => lane.classList.toggle('line-tool-on', flowLineTool));
+  }
+
+  function toggleFlowLineTool(force) {
+    flowLineTool = typeof force === 'boolean' ? force : !flowLineTool;
+    if (!flowLineTool && flowLineDraft) {
+      const svg = flowLineDraft.lane && flowLineDraft.lane.querySelector('svg.flow-arrows');
+      if (svg) svg.querySelectorAll('.flow-temp').forEach((el) => el.remove());
+      flowLineDraft = null;
+    }
+    syncFlowLineToolUi();
+  }
+  window.toggleFlowLineTool = toggleFlowLineTool;
+
+  function bindFlowLineToolKeys() {
+    if (window.__pmGridLineToolKeys) return;
+    window.__pmGridLineToolKeys = true;
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (event.target && event.target.getAttribute && event.target.getAttribute('contenteditable') === 'true') return;
+      if (flowLineTool || flowLineDraft) {
+        toggleFlowLineTool(false);
+        event.preventDefault();
+      }
+    });
+  }
+
   function arrow() {
     const span = document.createElement('span');
     span.className = 'flow-arrow-next';
@@ -2817,6 +3152,7 @@ function switchFlowSub(subId) {
   function bindFlowChrome() {
     bindFlowWheelZoom();
     enableFlowDrag();
+    bindFlowLineToolKeys();
   }
 
   function ensureNodeId(node) {
@@ -3102,7 +3438,10 @@ function switchFlowSub(subId) {
       from: cur.to,
       fromPort: cur.toPort,
       to: cur.from,
-      toPort: cur.fromPort
+      toPort: cur.fromPort,
+      ortho: cur.ortho,
+      axis: cur.axis,
+      dash: cur.dash
     };
     const next = edges.filter((e, i) => {
       if (i === idx) return false;
@@ -3132,11 +3471,16 @@ function switchFlowSub(subId) {
     edges.forEach((e) => {
       const fromPort = e.fromPort || 'b';
       const toPort = e.toPort || 't';
-      const p1 = portAnchor(byId[e.from], fromPort, null, 10);
-      const p2 = portAnchor(byId[e.to], toPort, null, 18);
-      const tip = portAnchor(byId[e.to], toPort, null, 4);
-      const inward = portDir(toPort).map((v) => -v);
-      const d = bezierPath(p1, p2, fromPort, toPort);
+      let d;
+      if (e.ortho) {
+        const c1 = nodeCenter(byId[e.from]);
+        const c2 = nodeCenter(byId[e.to]);
+        d = 'M ' + c1.x + ' ' + c1.y + ' L ' + c2.x + ' ' + c2.y;
+      } else {
+        const p1 = portAnchor(byId[e.from], fromPort, null, 10);
+        const p2 = portAnchor(byId[e.to], toPort, null, 18);
+        d = bezierPath(p1, p2, fromPort, toPort);
+      }
       const hit = document.createElementNS(NS, 'path');
       hit.setAttribute('class', 'flow-link-hit');
       hit.setAttribute('data-eid', e.id);
@@ -3146,18 +3490,23 @@ function switchFlowSub(subId) {
       line.setAttribute('data-eid', e.id);
       line.setAttribute('d', d);
       line.setAttribute('fill', 'none');
-      line.setAttribute('stroke', '#2563eb');
-      line.setAttribute('stroke-width', '1.8');
+      line.setAttribute('stroke', e.ortho ? '#38bdf8' : '#2563eb');
+      line.setAttribute('stroke-width', e.ortho ? '2.2' : '1.8');
       line.setAttribute('stroke-linecap', 'butt');
       line.setAttribute('stroke-linejoin', 'round');
-      const head = document.createElementNS(NS, 'polygon');
-      head.setAttribute('class', 'flow-link');
-      head.setAttribute('data-eid', e.id);
-      head.setAttribute('points', arrowPoly(tip, inward, 12));
-      head.setAttribute('fill', '#2563eb');
+      if (e.dash) line.setAttribute('stroke-dasharray', '7 6');
       svg.appendChild(hit);
       svg.appendChild(line);
-      svg.appendChild(head);
+      if (!e.ortho) {
+        const tip = portAnchor(byId[e.to], toPort, null, 4);
+        const inward = portDir(toPort).map((v) => -v);
+        const head = document.createElementNS(NS, 'polygon');
+        head.setAttribute('class', 'flow-link');
+        head.setAttribute('data-eid', e.id);
+        head.setAttribute('points', arrowPoly(tip, inward, 12));
+        head.setAttribute('fill', '#2563eb');
+        svg.appendChild(head);
+      }
     });
   }
 
@@ -3451,10 +3800,12 @@ function switchFlowSub(subId) {
         bg: n.style.getPropertyValue('background'),
         border: n.style.getPropertyValue('border-color'),
         size: n.dataset.size || 'm',
-        oldId: n.dataset.nid
+        oldId: n.dataset.nid,
+        shape: n.dataset.shape || '',
+        bubble: n.querySelector('.fn-bubble')?.innerText || ''
       })),
       edges: getEdges(lane).filter((e) => ids.has(e.from) && ids.has(e.to)).map((e) => ({
-        from: e.from, to: e.to, fromPort: e.fromPort, toPort: e.toPort
+        from: e.from, to: e.to, fromPort: e.fromPort, toPort: e.toPort, ortho: e.ortho, axis: e.axis, dash: e.dash
       }))
     };
     return true;
@@ -3468,9 +3819,13 @@ function switchFlowSub(subId) {
     clearFlowSelection(lane);
     const idMap = {};
     flowClipboard.nodes.forEach((item) => {
-      const node = makeFlowNode();
+      const node = item.shape === 'circle' ? makeFlowCircle() : item.shape === 'anchor' ? makeFlowAnchor() : makeFlowNode();
       const title = node.querySelector('.fn-title');
-      if (title) title.textContent = item.title;
+      if (title && item.title) title.textContent = item.title;
+      if (item.bubble) {
+        const bubble = addFlowBubble(node);
+        if (bubble) bubble.textContent = item.bubble;
+      }
       const x = Math.max(8, Math.round((origin.x + item.dx) / 8) * 8);
       const y = Math.max(8, Math.round((origin.y + item.dy) / 8) * 8);
       node.dataset.fx = String(x);
@@ -3491,7 +3846,7 @@ function switchFlowSub(subId) {
     const edges = getEdges(lane);
     flowClipboard.edges.forEach((e) => {
       if (!idMap[e.from] || !idMap[e.to]) return;
-      edges.push({ id: uid('e'), from: idMap[e.from], to: idMap[e.to], fromPort: e.fromPort, toPort: e.toPort });
+      edges.push({ id: uid('e'), from: idMap[e.from], to: idMap[e.to], fromPort: e.fromPort, toPort: e.toPort, ortho: e.ortho, axis: e.axis, dash: e.dash });
     });
     setEdges(lane, edges);
     placeFlowNodes(lane);
@@ -3716,6 +4071,12 @@ function switchFlowSub(subId) {
         if (node) return;
         if (event.target.closest('.flow-zoom-bar')) return;
         event.preventDefault();
+        if (flowLineTool && event.button === 0) {
+          const pt = clientToWorld(lane, event.clientX, event.clientY);
+          flowLineDraft = { lane, x0: pt.x, y0: pt.y };
+          lane.setPointerCapture(event.pointerId);
+          return;
+        }
         if (event.shiftKey && event.button === 0) {
           const lr = lane.getBoundingClientRect();
           const el = document.createElement('div');
@@ -3738,6 +4099,11 @@ function switchFlowSub(subId) {
       });
       lane.addEventListener('pointermove', (event) => {
         lastFlowPointer = { x: event.clientX, y: event.clientY };
+        if (flowLineDraft && flowLineDraft.lane === lane) {
+          const pt = clientToWorld(lane, event.clientX, event.clientY);
+          drawOrthoTemp(lane, flowLineDraft.x0, flowLineDraft.y0, pt.x, pt.y);
+          return;
+        }
         if (link) {
           drawTemp(event.clientX, event.clientY);
           clearHot();
@@ -3763,7 +4129,18 @@ function switchFlowSub(subId) {
         drag.nodes.forEach((item) => {
           let x = Math.max(8, item.x0 + dx);
           let y = Math.max(8, item.y0 + dy);
-          if (drag.nodes.length === 1) {
+          if (item.el.dataset.shape === 'circle') {
+            const locked = constrainCircleToRail(lane, item.el, x, y);
+            if (locked.hit) {
+              x = locked.x;
+              y = locked.y;
+              drawFlowGuides(lane, [], []);
+            } else if (drag.nodes.length === 1) {
+              const snapped = snapFlowNode(lane, item.el, x, y);
+              x = snapped.x; y = snapped.y;
+              drawFlowGuides(lane, snapped.v, snapped.h);
+            }
+          } else if (drag.nodes.length === 1) {
             const snapped = snapFlowNode(lane, item.el, x, y);
             x = snapped.x; y = snapped.y;
             drawFlowGuides(lane, snapped.v, snapped.h);
@@ -3777,6 +4154,12 @@ function switchFlowSub(subId) {
       });
       lane.addEventListener('pointerup', (event) => {
         lastFlowPointer = { x: event.clientX, y: event.clientY };
+        if (flowLineDraft && flowLineDraft.lane === lane) {
+          const pt = clientToWorld(lane, event.clientX, event.clientY);
+          persistOrthoLine(lane, flowLineDraft.x0, flowLineDraft.y0, pt.x, pt.y);
+          flowLineDraft = null;
+          return;
+        }
         if (link) {
           let toNode = null;
           let toPort = link.toPort;
@@ -3871,6 +4254,7 @@ function switchFlowSub(subId) {
           startFlowTextEdit(node);
           return;
         }
+        if (flowLineTool) return;
         addFlowNodeAt(lane, event.clientX, event.clientY);
       });
     });
@@ -4402,7 +4786,21 @@ function switchFlowSub(subId) {
         event.preventDefault();
         const eid = flowLink.getAttribute('data-eid');
         const lane = flowLink.closest('.flow-step-lane') || event.target.closest('#tab-flow .flow-step-lane');
-        showMenu(event.clientX, event.clientY, [
+        const clickX = event.clientX;
+        const clickY = event.clientY;
+        showMenu(clickX, clickY, [
+          { label: '동그라미 추가 / Add circle', run: withHistory(() => {
+            if (!lane || !eid) return;
+            splitFlowEdgeAt(lane, eid, clickX, clickY);
+          }) },
+          { label: '실선 / Solid', run: withHistory(() => {
+            if (!lane || !eid) return;
+            setEdgeDash(lane, eid, false);
+          }) },
+          { label: '점선 / Dashed', run: withHistory(() => {
+            if (!lane || !eid) return;
+            setEdgeDash(lane, eid, true);
+          }) },
           { label: '연결 끊기', run: withHistory(() => {
             if (!lane || !eid) return;
             setEdges(lane, getEdges(lane).filter((e) => e.id !== eid));
@@ -4445,7 +4843,7 @@ function switchFlowSub(subId) {
           clearFlowSelection(lane);
           flowNode.classList.add('selected');
         }
-        showMenu(event.clientX, event.clientY, [
+        const nodeItems = [
           ...selectionMenuItems(lane),
           { label: '텍스트 수정', run: () => startFlowTextEdit(flowNode) },
           { label: 'Clear', run: () => clearSelectedFlowText(lane) },
@@ -4458,7 +4856,12 @@ function switchFlowSub(subId) {
           flowColorPalette(lane, flowNode),
           '|',
           { label: '삭제', run: withHistory(() => deleteFlowNode(flowNode)) }
-        ]);
+        ];
+        if (flowNode.dataset.shape === 'circle') {
+          const at = nodeItems.findIndex((it) => it && it.label === '텍스트 수정');
+          nodeItems.splice(at < 0 ? nodeItems.length : at + 1, 0, { label: '말풍선 추가 / Add speech bubble', run: withHistory(() => addFlowBubble(flowNode)) });
+        }
+        showMenu(event.clientX, event.clientY, nodeItems);
         return;
       }
       if (story) {
