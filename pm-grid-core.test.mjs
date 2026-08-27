@@ -61,3 +61,31 @@ test('remapLegacyIa turns the 9-col history sheet into a 4-depth IA', () => {
   assert.deepEqual(mapped.headers, core.iaCanonicalHeaders());
   assert.deepEqual(mapped.data[0], ['웹 홈', '3', 'A 홈', 'A-1 시작', '입력창', '', '대화형 홈', '']);
 });
+
+test('IA headers stay bilingual and keep 4 Depth columns', () => {
+  assert.deepEqual(core.iaCanonicalHeaders(), [
+    '화면 구분 / Screen type',
+    '화면 레벨 / Level',
+    '1 Depth',
+    '2 Depth',
+    '3 Depth',
+    '4 Depth',
+    '라벨 / Label',
+    '내비 / Nav'
+  ]);
+  assert.match(html, /화면 구분 \/ Screen type/);
+  assert.match(html, /<th contenteditable="true">4 Depth<\/th>/);
+});
+
+test('class studio seed is empty PM Grid language with a 3-frame Story', () => {
+  const forbidden = ['수능', '과외', '손풀이', 'Node_Lab', 'NodeLab', 'Manyfast', 'nodelab-master-edits', '김선혜'];
+  forbidden.forEach((word) => {
+    assert.equal(html.includes(word), false, word);
+  });
+  assert.match(html, /pm-grid-board-v3/);
+  assert.match(html, /id="tab-storyboard"[\s\S]*class="flow-step-lane story-branch-lane"/);
+  assert.equal((html.match(/class="story-card"/g) || []).length, 3);
+  assert.match(html, /data-screen-role="admin"/);
+  assert.match(html, /id="export-png-btn"/);
+  assert.match(html, /id="export-excel-btn"/);
+});
