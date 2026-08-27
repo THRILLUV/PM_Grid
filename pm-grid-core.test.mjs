@@ -75,6 +75,8 @@ test('IA headers stay bilingual and keep 4 Depth columns', () => {
   ]);
   assert.match(html, /화면 구분 \/ Screen type/);
   assert.match(html, /<th contenteditable="true">4 Depth<\/th>/);
+  assert.match(html, /#ia-spreadsheet table\.jexcel > tbody > tr > td:nth-child\(7\)/);
+  assert.match(html, /버전 \/ Version/);
 });
 
 test('flow box CSS does not treat every node as an invisible anchor', () => {
@@ -93,4 +95,14 @@ test('class studio seed is empty PM Grid language with a 3-frame Story', () => {
   assert.match(html, /data-screen-role="admin"/);
   assert.match(html, /id="export-png-btn"/);
   assert.match(html, /id="export-excel-btn"/);
+});
+
+test('frontend developer and korean rules stay always-on', () => {
+  const fe = readFileSync(new URL('./.cursor/rules/frontend-developer.mdc', import.meta.url), 'utf8');
+  const ko = readFileSync(new URL('./.cursor/rules/korean.mdc', import.meta.url), 'utf8');
+  assert.match(fe, /alwaysApply:\s*true/);
+  assert.match(fe, /DO NOT.*rewrite the editor as React/i);
+  assert.match(fe, /Every new UI string/);
+  assert.match(ko, /alwaysApply:\s*true/);
+  assert.match(ko, /전부 한국어/);
 });

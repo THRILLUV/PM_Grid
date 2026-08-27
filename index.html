@@ -1396,7 +1396,7 @@ body {
   justify-content: flex-end;
   flex-wrap: nowrap !important;
 }
-.ia-excel-layout { grid-template-columns: minmax(420px, 38%) minmax(0, 1fr) !important; }
+.ia-excel-layout { grid-template-columns: minmax(248px, 28%) minmax(760px, 1fr) !important; }
 
 /* hide only the jexcel index gutter — not the first Depth column */
 #depth-spreadsheet td.jexcel_row,
@@ -1407,16 +1407,26 @@ body {
 }
 #depth-spreadsheet table.jexcel > thead > tr > td,
 #depth-spreadsheet table.jexcel > tbody > tr > td {
-  width: 96px;
-  min-width: 96px;
+  width: 88px;
+  min-width: 88px;
   box-sizing: border-box;
 }
 #ia-spreadsheet table.jexcel > thead > tr > td,
 #ia-spreadsheet table.jexcel > tbody > tr > td {
-  min-width: 108px;
+  min-width: 88px;
+}
+/* 4th Depth stays a real column after hideIndex() — index gutter is td:first-child */
+#depth-spreadsheet table.jexcel > thead > tr > td:nth-child(5),
+#depth-spreadsheet table.jexcel > tbody > tr > td:nth-child(5),
+#ia-spreadsheet table.jexcel > thead > tr > td:nth-child(7),
+#ia-spreadsheet table.jexcel > tbody > tr > td:nth-child(7) {
+  display: table-cell !important;
+  visibility: visible !important;
+  min-width: 88px;
 }
 #tab-ia .sheet-wrap { overflow-x: auto; overflow-y: auto; max-height: 640px; }
 #tab-ia .depth-sheet { overflow-x: auto; overflow-y: auto; max-height: 640px; }
+#tab-ia .ia-excel-layout { overflow-x: auto; }
 
 
 .story-card { cursor: grab; }
@@ -1989,20 +1999,20 @@ body {
       </div>
     </div>
 
-    <nav class="master-tabs">
-      <button class="m-tab-btn active" data-tab="flow" data-ko="플로우" data-en="Flow" onclick="switchMasterTab('flow', this)">플로우</button>
-      <button class="m-tab-btn" data-tab="storyboard" data-ko="스토리" data-en="Story" onclick="switchMasterTab('storyboard', this)">스토리</button>
-      <button class="m-tab-btn" data-tab="ia" data-ko="IA" data-en="IA" onclick="switchMasterTab('ia', this)">IA</button>
-      <button class="m-tab-btn" data-tab="screens" data-ko="화면" data-en="Screen" onclick="switchMasterTab('screens', this)">화면</button>
+    <nav class="master-tabs" role="tablist" aria-label="PM Grid">
+      <button class="m-tab-btn active" role="tab" aria-selected="true" aria-controls="tab-flow" data-tab="flow" data-ko="플로우" data-en="Flow" onclick="switchMasterTab('flow', this)">플로우</button>
+      <button class="m-tab-btn" role="tab" aria-selected="false" aria-controls="tab-storyboard" data-tab="storyboard" data-ko="스토리" data-en="Story" onclick="switchMasterTab('storyboard', this)">스토리</button>
+      <button class="m-tab-btn" role="tab" aria-selected="false" aria-controls="tab-ia" data-tab="ia" data-ko="IA" data-en="IA" onclick="switchMasterTab('ia', this)">IA</button>
+      <button class="m-tab-btn" role="tab" aria-selected="false" aria-controls="tab-screens" data-tab="screens" data-ko="화면" data-en="Screen" onclick="switchMasterTab('screens', this)">화면</button>
     </nav>
   
     <div class="master-export-group" style="flex-wrap:wrap; justify-content:flex-end;">
       <button class="m-export-btn" onclick="undoBoard()" data-ko="되돌리기" data-en="Undo" title="Cmd/Ctrl+Z">되돌리기</button>
       <button class="m-export-btn" onclick="redoBoard()" data-ko="다시실행" data-en="Redo" title="Cmd/Ctrl+Shift+Z">다시실행</button>
-      <button class="m-export-btn figma-btn" onclick="exportCurrentTabSVG()" title="Figma로 가져올 수 있는 SVG 이미지로 저장합니다. 편집 가능한 .fig 파일은 아닙니다.">레이어 SVG</button>
+      <button class="m-export-btn figma-btn" onclick="exportCurrentTabSVG()" data-ko="레이어 SVG" data-en="Layer SVG">레이어 SVG</button>
       <button id="export-png-btn" class="m-export-btn" onclick="exportCurrentTabPNG()" data-ko="PNG" data-en="PNG" title="PNG">PNG</button>
       <button id="export-excel-btn" class="m-export-btn" onclick="exportIAExcel()" data-ko="엑셀" data-en="Excel" title="XLSX" style="display:none">엑셀</button>
-      <label id="ia-color-wrap" class="m-export-btn" title="선택한 셀 배경색" style="display:none">셀 색 <input id="ia-cell-color" type="color" value="#dbeafe" style="width:28px;height:20px;border:0;padding:0;background:transparent;cursor:pointer"></label>
+      <label id="ia-color-wrap" class="m-export-btn" style="display:none"><span data-ko="셀 색" data-en="Cell color">셀 색</span> <input id="ia-cell-color" type="color" value="#dbeafe" aria-label="Cell color" style="width:28px;height:20px;border:0;padding:0;background:transparent;cursor:pointer"></label>
       <button class="m-export-btn" onclick="printCurrentTab()" data-ko="PDF" data-en="PDF">PDF</button>
       <button class="m-export-btn" onclick="exportBoardJSON()" data-ko="저장" data-en="Save">저장</button>
       <button class="m-export-btn" onclick="triggerBoardImport()" data-ko="불러오기" data-en="Load">불러오기</button>
@@ -2017,7 +2027,7 @@ body {
   <!-- ======================================================== -->
   <!-- 1. 서비스 플로우 (Service Flow)                          -->
   <!-- ======================================================== -->
-  <section class="tab-view-content active" id="tab-flow">
+  <section class="tab-view-content active" id="tab-flow" role="tabpanel">
     <div class="flow-control-bar">
       <div>
         <h3 style="font-size:16px; font-weight:700;" contenteditable="true">플로우 / Flow</h3>
@@ -2065,7 +2075,7 @@ body {
     </div>
   </section>
 
-  <section class="tab-view-content" id="tab-storyboard">
+  <section class="tab-view-content" id="tab-storyboard" role="tabpanel" hidden>
     <div class="storyboard-wrap">
       <div class="storyboard-lead">
         <h3 contenteditable="true">스토리 / Story</h3>
@@ -2103,7 +2113,7 @@ body {
     </div>
   </section>
 
-  <section class="tab-view-content" id="tab-ia">
+  <section class="tab-view-content" id="tab-ia" role="tabpanel" hidden>
     <div class="ia-excel-page">
       <div class="ia-excel-head">
         <h3 contenteditable="true">IA / 정보 구조도</h3>
@@ -2115,7 +2125,7 @@ body {
       </div>
             <div class="ia-action-toolbar">
         <div class="ia-tool-btn-group">
-          <span style="font-size:12px; font-weight:700; color:#475569; margin-right:4px;"><span style="font-size:12px; font-weight:700; color:#475569; margin-right:4px;" data-ko="엑셀 시트:" data-en="Excel sheet:">엑셀 시트:</span></span>
+          <span style="font-size:12px; font-weight:700; color:#475569; margin-right:4px;" data-ko="엑셀 시트:" data-en="Excel sheet:">엑셀 시트:</span>
           <button class="ia-tool-btn primary" onclick="addTableRow('below-selected')" data-ko="행 추가" data-en="Add row">행 추가</button>
           <button class="ia-tool-btn danger" onclick="deleteSelectedRow()" data-ko="행 삭제" data-en="Delete row">행 삭제</button>
           <button class="ia-tool-btn primary" onclick="insertSheetColumn(1)" data-ko="열 추가" data-en="Add column">열 추가</button>
@@ -2144,6 +2154,7 @@ body {
           <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">아레나 / Arena</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
           <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">취합본 / Compile</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
           <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">화면 / Screen</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
+          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">버전 / Version</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
           <div class="depth-row"><div class="dcell" contenteditable="true">관리자 / Admin</div><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
         </div>
 
@@ -2171,6 +2182,7 @@ body {
               <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">2</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">아레나 / Arena</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">아레나 / Arena</td><td contenteditable="true"></td></tr>
               <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">2</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">취합본 / Compile</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">취합본 / Compile</td><td contenteditable="true"></td></tr>
               <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">2</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">화면 / Screen</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">화면 / Screen</td><td contenteditable="true"></td></tr>
+              <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">2</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">버전 / Version</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">버전 / Version</td><td contenteditable="true"></td></tr>
               <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">1</td><td contenteditable="true">관리자 / Admin</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">관리자 / Admin</td><td contenteditable="true"></td></tr>
             </tbody>
           </table>
@@ -2179,7 +2191,7 @@ body {
     </div>
   </section>
 
-  <section class="tab-view-content" id="tab-screens">
+  <section class="tab-view-content" id="tab-screens" role="tabpanel" hidden>
     <div class="screen-design-deck">
       <div class="screen-card-unit">
         <div class="screen-visual-mock">
@@ -2210,17 +2222,25 @@ body {
 
 <script>
 function switchMasterTab(tabId, btn) {
-  document.querySelectorAll('.m-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.m-tab-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-selected', 'false');
+  });
   document.querySelectorAll('.tab-view-content').forEach(c => {
     c.classList.remove('active');
     c.style.display = 'none';
+    c.setAttribute('hidden', '');
   });
   const activeBtn = btn || document.querySelector('.m-tab-btn[data-tab="'+tabId+'"]');
-  if (activeBtn) activeBtn.classList.add('active');
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+    activeBtn.setAttribute('aria-selected', 'true');
+  }
   const target = document.getElementById('tab-' + tabId);
   if (target) {
     target.classList.add('active');
     target.style.display = 'flex';
+    target.removeAttribute('hidden');
   }
   document.documentElement.setAttribute('data-tab', tabId);
 }
@@ -2292,12 +2312,14 @@ function switchFlowSub(subId) {
     uiLang = lang === 'en' ? 'en' : 'ko';
     try { localStorage.setItem('pm-grid-ui-lang', uiLang); } catch (e) {}
     syncLangChrome();
+    if (typeof ensureCoordBar === 'function') ensureCoordBar();
     const deck = document.querySelector('#tab-screens .screen-design-deck') || tabEl('screens');
     if (deck) {
       const bar = deck.querySelector('#screen-mini-bar');
       if (bar) bar.remove();
       bindScreenChrome();
     }
+    if (typeof bindStoryChrome === 'function') bindStoryChrome();
   };
 
   const activeTabKey = () => document.documentElement.getAttribute('data-tab') || 'flow';
@@ -2471,20 +2493,20 @@ function switchFlowSub(subId) {
     const key = activeTabKey();
     const current = captureTab(key);
     if (tabHistory[key][tabIndex[key]] !== current) pushTabHistory(key);
-    if (tabIndex[key] <= 0) { toast('이 탭에서 되돌릴 내용이 없습니다.'); return; }
+    if (tabIndex[key] <= 0) { toast(t('이 탭에서 되돌릴 내용이 없습니다.', 'Nothing to undo on this tab.')); return; }
     tabIndex[key] -= 1;
     applyTab(key, tabHistory[key][tabIndex[key]]);
     saveLocal();
-    toast(`${key} 탭을 되돌렸습니다.`);
+    toast(t('이 탭을 되돌렸습니다.', 'Undid this tab.'));
   };
 
   window.redoBoard = () => {
     const key = activeTabKey();
-    if (tabIndex[key] >= tabHistory[key].length - 1) { toast('이 탭에서 다시 실행할 내용이 없습니다.'); return; }
+    if (tabIndex[key] >= tabHistory[key].length - 1) { toast(t('이 탭에서 다시 실행할 내용이 없습니다.', 'Nothing to redo on this tab.')); return; }
     tabIndex[key] += 1;
     applyTab(key, tabHistory[key][tabIndex[key]]);
     saveLocal();
-    toast(`${key} 탭을 다시 실행했습니다.`);
+    toast(t('이 탭을 다시 실행했습니다.', 'Redid this tab.'));
   };
 
   function withHistory(fn) {
@@ -2753,7 +2775,7 @@ function switchFlowSub(subId) {
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, ...data]), 'IA');
       XLSX.writeFile(wb, `${filenameBase()}-ia.xlsx`);
       toast(t('Depth + IA 시트를 엑셀로 저장했습니다.', 'Saved Depth + IA sheets as Excel.'));
-    } catch (error) { toast(`엑셀 저장 실패: ${error.message}`); }
+    } catch (error) { toast(t('엑셀을 저장하지 못했습니다.', 'Could not save Excel.') + ' ' + error.message); }
   };
 
   window.printCurrentTab = () => {
@@ -2761,7 +2783,7 @@ function switchFlowSub(subId) {
     const styles = [...document.querySelectorAll('style')].map((style) => style.textContent).join('\n');
     const clone = tab.cloneNode(true);
     const popup = window.open('', '_blank');
-    if (!popup) { toast('팝업이 차단되었습니다.'); return; }
+    if (!popup) { toast(t('팝업이 차단되었습니다.', 'The popup was blocked.')); return; }
     popup.document.open();
     popup.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${filenameBase()}</title><style>${styles}\n@page { size: A4 landscape; margin: 12mm; } body{background:#fff!important} .master-header,.ia-action-toolbar,.flow-control-bar,.tab-mini-bar{display:none!important} .tab-view-content{display:flex!important}</style></head><body>${clone.outerHTML}</body></html>`);
     popup.document.close();
@@ -2771,7 +2793,7 @@ function switchFlowSub(subId) {
   window.exportBoardJSON = () => {
     saveLocal();
     download(new Blob([JSON.stringify(boardSnapshot(), null, 2)], { type: 'application/json;charset=utf-8' }), `${filenameBase()}-backup.json`);
-    toast('JSON 백업을 저장했습니다.');
+    toast(t('JSON 백업을 저장했습니다.', 'Saved the JSON backup.'));
   };
   window.triggerBoardImport = () => document.getElementById('board-json-import')?.click();
 
@@ -4001,7 +4023,7 @@ function switchFlowSub(subId) {
     const list = [...lane.querySelectorAll('.flow-node-box')];
     const i = list.indexOf(node);
     const j = i + dir;
-    if (i < 0 || j < 0 || j >= list.length) { toast('더 이상 옮길 순서가 없습니다.'); return; }
+    if (i < 0 || j < 0 || j >= list.length) { toast(t('더 이상 옮길 순서가 없습니다.', 'That node is already at the end of the order.')); return; }
     pushTabHistory('flow');
     if (dir < 0) list[j].before(node);
     else list[j].after(node);
@@ -4875,20 +4897,27 @@ function switchFlowSub(subId) {
     const addr = a === b ? a : `${a}:${b}`;
     const input = document.getElementById('ia-coord');
     const hint = document.getElementById('ia-coord-hint');
-    const region = sheetName || (lastIaFocus === 'depth' ? 'Depth' : '정보구조');
+    const region = sheetName === 'Depth' || lastIaFocus === 'depth' ? 'Depth' : 'IA';
     if (input) input.value = `${region}!${addr}`;
-    if (hint) hint.textContent = a === b ? `${region} · ${colName(x1)}열 ${y1 + 1}행` : `${region} · ${colName(x1)}열 ${y1 + 1}행 ~ ${colName(x2)}열 ${y2 + 1}행`;
+    if (hint) {
+      hint.textContent = a === b
+        ? t(`${region} · ${colName(x1)}열 ${y1 + 1}행`, `${region} · column ${colName(x1)} row ${y1 + 1}`)
+        : t(`${region} · ${colName(x1)}열 ${y1 + 1}행 ~ ${colName(x2)}열 ${y2 + 1}행`, `${region} · column ${colName(x1)} row ${y1 + 1} to column ${colName(x2)} row ${y2 + 1}`);
+    }
   }
 
   function ensureCoordBar() {
     const page = document.querySelector('#tab-ia .ia-excel-page') || document.getElementById('tab-ia');
-    if (!page || document.getElementById('ia-coord-bar')) return;
-    const bar = document.createElement('div');
-    bar.id = 'ia-coord-bar';
-    bar.innerHTML = '<span>현재 칸</span><input id="ia-coord" readonly value="A1"><span id="ia-coord-hint">A열 1행</span>';
-    const layout = document.querySelector('#tab-ia .ia-excel-layout');
-    if (layout) layout.before(bar);
-    else page.prepend(bar);
+    if (!page) return;
+    let bar = document.getElementById('ia-coord-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'ia-coord-bar';
+      const layout = document.querySelector('#tab-ia .ia-excel-layout');
+      if (layout) layout.before(bar);
+      else page.prepend(bar);
+    }
+    bar.innerHTML = `<span data-ko="현재 칸" data-en="Current cell">${t('현재 칸', 'Current cell')}</span><input id="ia-coord" readonly value="IA!A1" aria-label="${t('현재 칸', 'Current cell')}"><span id="ia-coord-hint">${t('IA · A열 1행', 'IA · column A row 1')}</span>`;
   }
 
   function mountDepthSpreadsheet(headers, data, styles) {
@@ -4929,7 +4958,7 @@ function switchFlowSub(subId) {
       tableOverflow: false,
       tableWidth: '100%',
       tableHeight: '560px',
-      onselection: (el, x1, y1, x2, y2) => { lastIaFocus = 'depth'; setCoord('정보구조', x1, y1, x2, y2); },
+      onselection: (el, x1, y1, x2, y2) => { lastIaFocus = 'depth'; setCoord('Depth', x1, y1, x2, y2); },
       onchange: () => { if (!restoring) { pushTabHistory('ia'); saveLocal(); } }
     });
     if (styles && depthSheet.setStyle) {
@@ -4964,7 +4993,7 @@ function switchFlowSub(subId) {
     const cols = mapped.headers.map((title, i) => ({
       type: 'text',
       title,
-      width: i === 0 || i >= 6 ? 140 : i === 1 ? 88 : 110,
+      width: i === 0 ? 124 : i === 1 ? 72 : i >= 6 ? 112 : 90,
       align: i === 1 ? 'center' : 'left'
     }));
     const rows = (mapped.data && mapped.data.length) ? mapped.data : Array.from({ length: 12 }, () => cols.map(() => ''));
@@ -4984,7 +5013,7 @@ function switchFlowSub(subId) {
       tableOverflow: false,
       tableWidth: '100%',
       tableHeight: '560px',
-      onselection: (el, x1, y1, x2, y2) => { lastIaFocus = 'info'; setCoord('정보구조', x1, y1, x2, y2); },
+      onselection: (el, x1, y1, x2, y2) => { lastIaFocus = 'info'; setCoord('IA', x1, y1, x2, y2); },
       onchange: () => { if (!restoring) { pushTabHistory('ia'); saveLocal(); } }
     };
     try {
@@ -5086,13 +5115,13 @@ function switchFlowSub(subId) {
 
   function applyCellColor(color) {
     const inst = focusedIaSheet();
-    if (!inst) { toast('스프레드시트가 아직 없습니다.'); return; }
+    if (!inst) { toast(t('스프레드시트가 아직 없습니다.', 'The spreadsheet is not ready yet.')); return; }
     const cells = selectedSheetCells();
-    if (!cells.length) { toast('색을 넣을 셀을 먼저 드래그해서 선택해 주세요.'); return; }
+    if (!cells.length) { toast(t('색을 넣을 셀을 먼저 드래그해서 선택해 주세요.', 'Drag to select cells first, then set a color.')); return; }
     pushTabHistory('ia');
     cells.forEach((name) => inst.setStyle(name, 'background-color', color));
     saveLocal();
-    toast(`${cells.length}칸 배경색을 바꿨습니다.`);
+    toast(t(`${cells.length}칸 배경색을 바꿨습니다.`, `Filled ${cells.length} cells.`));
   }
 
   function syncTabChrome(tabId) {
@@ -5135,7 +5164,7 @@ function switchFlowSub(subId) {
   });
   window.shiftDepth = withHistory((direction) => {
     const current = lastDepthCell;
-    if (!current || !current.textContent.trim()) { toast('이동할 Depth 셀을 먼저 클릭해 주세요.'); return; }
+    if (!current || !current.textContent.trim()) { toast(t('이동할 Depth 셀을 먼저 클릭해 주세요.', 'Click a Depth cell first.')); return; }
     const cells = [...current.parentElement.querySelectorAll('.dcell')];
     const next = cells[cells.indexOf(current) + direction];
     if (!next) return;
@@ -5147,7 +5176,7 @@ function switchFlowSub(subId) {
     lastDepthCell = next;
   });
   window.syncDepthGridFromTable = withHistory(() => {
-    toast('오른쪽 스프레드시트는 독립 시트입니다. Depth 트리는 왼쪽에서 직접 고칩니다.');
+    toast(t('오른쪽 스프레드시트는 독립 시트입니다. Depth 트리는 왼쪽에서 직접 고칩니다.', 'The right sheet is independent. Edit the Depth tree on the left.'));
   });
 
   window.PMGridCore = {
@@ -5388,8 +5417,8 @@ function switchFlowSub(subId) {
         pushTabHistory();
         restoreSnapshot(JSON.parse(await file.text()));
         saveLocal();
-        toast('JSON 백업을 불러왔습니다.');
-      } catch (error) { toast(`불러오기 실패: ${error.message}`); }
+        toast(t('JSON 백업을 불러왔습니다.', 'Loaded the JSON backup.'));
+      } catch (error) { toast(t('JSON을 불러오지 못했습니다.', 'Could not load JSON.') + ' ' + error.message); }
       event.target.value = '';
     });
   });
