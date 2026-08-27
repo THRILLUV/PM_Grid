@@ -62,6 +62,30 @@ body {
   justify-content: space-between;
   gap: 24px;
 }
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 2px;
+}
+.lang-switch button {
+  border: 0;
+  background: transparent;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  cursor: pointer;
+}
+.lang-switch button.active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: var(--shadow-sm);
+}
 
 .brand-title {
   display: flex;
@@ -1175,6 +1199,12 @@ body {
   margin-bottom: 12px;
   flex-wrap: wrap;
 }
+#screen-mini-bar button.active,
+.tab-mini-bar button.active {
+  background: #2563eb !important;
+  color: #fff !important;
+  border-color: #1d4ed8 !important;
+}
 .screen-visual-mock, .mock-body-content { position: relative; }
 .screen-shape {
   position: absolute;
@@ -1187,15 +1217,37 @@ body {
   cursor: pointer;
   z-index: 3;
 }
-.screen-shape[data-kind="rect"] { border-radius: 4px; }
+.screen-shape[data-kind="rect"] { border-radius: 0; }
 .screen-shape[data-kind="round"] { border-radius: 16px; }
-.screen-shape[data-kind="circle"] { border-radius: 999px; width: 72px; height: 72px; display:flex; align-items:center; justify-content:center; }
+.screen-shape[data-kind="circle"] { border-radius: 999px; display:flex; align-items:center; justify-content:center; }
 .screen-shape[data-kind="text"] { border: 0; background: transparent; min-height: auto; }
 .screen-shape[data-kind="bubble"] {
   border-radius: 16px 16px 16px 4px;
   background: #eff6ff;
   border-color: #93c5fd;
 }
+.screen-shape.editing { cursor: text; outline: 2px solid #1d4ed8; }
+.screen-shape .shape-label {
+  display: block;
+  width: 100%;
+  pointer-events: none;
+  text-align: center;
+}
+.screen-shape.editing .shape-label { pointer-events: auto; }
+.screen-radius-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #2563eb;
+  background: #fff;
+  border-radius: 50%;
+  right: 2px;
+  top: 2px;
+  cursor: nwse-resize;
+  z-index: 6;
+  pointer-events: auto;
+}
+.mock-body-content.placing-shape { cursor: crosshair; }
 #ia-spreadsheet {
   width: 100%;
   min-height: 480px;
@@ -1344,30 +1396,27 @@ body {
   justify-content: flex-end;
   flex-wrap: nowrap !important;
 }
-.ia-excel-layout { grid-template-columns: 400px minmax(0, 1fr) !important; }
+.ia-excel-layout { grid-template-columns: minmax(420px, 38%) minmax(0, 1fr) !important; }
 
-/* hide jexcel row-index gutter so 4 depth cols actually fit */
-#depth-spreadsheet table.jexcel > thead > tr > td:first-child,
-#depth-spreadsheet table.jexcel > tbody > tr > td:first-child,
-#ia-spreadsheet table.jexcel > thead > tr > td:first-child,
-#ia-spreadsheet table.jexcel > tbody > tr > td:first-child {
+/* hide only the jexcel index gutter — not the first Depth column */
+#depth-spreadsheet td.jexcel_row,
+#depth-spreadsheet td.jexcel_selectall,
+#ia-spreadsheet td.jexcel_row,
+#ia-spreadsheet td.jexcel_selectall {
   display: none !important;
 }
 #depth-spreadsheet table.jexcel > thead > tr > td,
 #depth-spreadsheet table.jexcel > tbody > tr > td {
-  width: 90px;
-  min-width: 90px;
-  max-width: 90px;
+  width: 96px;
+  min-width: 96px;
   box-sizing: border-box;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 #ia-spreadsheet table.jexcel > thead > tr > td,
 #ia-spreadsheet table.jexcel > tbody > tr > td {
-  min-width: 100px;
+  min-width: 108px;
 }
 #tab-ia .sheet-wrap { overflow-x: auto; overflow-y: auto; max-height: 640px; }
-#tab-ia .depth-sheet { overflow: hidden; }
+#tab-ia .depth-sheet { overflow-x: auto; overflow-y: auto; max-height: 640px; }
 
 
 .story-card { cursor: grab; }
@@ -1602,8 +1651,22 @@ body {
 #tab-flow .fn-tag,
 #tab-flow .fn-guide { display: none !important; }
 #tab-flow .flow-arrow-next { display: none; }
-#tab-flow .flow-arrows { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-#tab-flow .flow-guides { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+#tab-flow .flow-arrows {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
+}
+#tab-flow .flow-guides {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 3;
+}
 #tab-flow .flow-step-lane {
   background: #f8fafc;
   cursor: grab;
@@ -1656,6 +1719,9 @@ body {
   position: absolute;
   left: 0;
   top: 0;
+  min-width: 100%;
+  min-height: 100%;
+  overflow: visible;
   transform-origin: 0 0;
   background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
   background-size: 8px 8px;
@@ -1684,8 +1750,11 @@ body {
 #tab-flow .flow-arrows path.flow-link,
 #tab-flow .flow-arrows path.flow-link-hit { pointer-events: stroke; }
 #tab-flow .flow-arrows path.flow-link { cursor: pointer; }
+#tab-flow .flow-arrows path.flow-link.is-dash {
+  stroke-dasharray: 10 8 !important;
+}
 #tab-flow .flow-arrows polygon.flow-link { pointer-events: auto; cursor: pointer; }
-#tab-flow .flow-arrows path.flow-link-hit { fill: none; stroke: transparent; stroke-width: 14; cursor: pointer; }
+#tab-flow .flow-arrows path.flow-link-hit { fill: none; stroke: transparent; stroke-width: 16; cursor: pointer; }
 #tab-flow .flow-arrows path.flow-temp { pointer-events: none; }
 #tab-flow .flow-step-lane.line-tool-on { cursor: crosshair; }
 .flow-tool-btn {
@@ -1816,13 +1885,17 @@ body {
       <span class="logo-badge">PM Grid</span>
       <h1 contenteditable="true">Planning Artifact Board</h1>
       <span>Flow · IA · Storyboard · Screen</span>
+      <div class="lang-switch" role="group" aria-label="Language / 언어">
+        <button type="button" data-lang="ko" id="lang-btn-ko" onclick="setUiLang('ko')">KO</button>
+        <button type="button" data-lang="en" id="lang-btn-en" onclick="setUiLang('en')">EN</button>
+      </div>
     </div>
 
     <nav class="master-tabs">
-      <button class="m-tab-btn active" data-tab="flow" onclick="switchMasterTab('flow', this)">서비스 플로우</button>
-      <button class="m-tab-btn" data-tab="storyboard" onclick="switchMasterTab('storyboard', this)">유저 스토리보드</button>
-      <button class="m-tab-btn" data-tab="ia" onclick="switchMasterTab('ia', this)">정보 구조도</button>
-      <button class="m-tab-btn" data-tab="screens" onclick="switchMasterTab('screens', this)">화면설계서</button>
+      <button class="m-tab-btn active" data-tab="flow" data-ko="서비스 플로우" data-en="Service flow" onclick="switchMasterTab('flow', this)">서비스 플로우</button>
+      <button class="m-tab-btn" data-tab="storyboard" data-ko="유저 스토리보드" data-en="User storyboard" onclick="switchMasterTab('storyboard', this)">유저 스토리보드</button>
+      <button class="m-tab-btn" data-tab="ia" data-ko="정보 구조도" data-en="Information architecture" onclick="switchMasterTab('ia', this)">정보 구조도</button>
+      <button class="m-tab-btn" data-tab="screens" data-ko="화면설계서" data-en="Screen design" onclick="switchMasterTab('screens', this)">화면설계서</button>
     </nav>
   
     <div class="master-export-group" style="flex-wrap:wrap; justify-content:flex-end;">
@@ -1859,7 +1932,7 @@ body {
         <button class="f-sub-btn" onclick="switchFlowSub('function')">기능 & 분기</button>
         <button class="f-sub-btn" onclick="switchFlowSub('screen')">화면 정보</button>
         <button class="f-sub-btn" onclick="switchFlowSub('scenario')">시나리오</button>
-        <button type="button" class="flow-tool-btn" id="btn-flow-line" onclick="toggleFlowLineTool()">직선 / Line</button>
+        <button type="button" class="flow-tool-btn" id="btn-flow-line" data-ko="직선" data-en="Line" onclick="toggleFlowLineTool()">직선 / Line</button>
       </div>
     </div>
 
@@ -2098,7 +2171,7 @@ body {
   <section class="tab-view-content" id="tab-ia">
     <div class="ia-excel-page">
       <div class="ia-excel-head">
-        <h3 contenteditable="true">정보 구조도</h3>
+        <h3 contenteditable="true">정보 구조도 / Information Architecture</h3>
         <ul>
           <li contenteditable="true">정보 특성, 유사도, 관련성을 기준으로 <em>정보를 그룹핑</em>하고, 정보 탐색과 기능 사용 단계 흐름에 맞게 <em>정보 레벨 구조를 정리</em>하고 직관적인 레이블 부여</li>
           <li contenteditable="true">정보 구조도 설계에 필요한 항목: 화면 구분, 화면 레벨(depth), 공통 사용 항목 표기 규칙. 히스토리 관리 항목은 필요 시 추가</li>
@@ -2129,10 +2202,10 @@ body {
       <div class="ia-excel-layout">
         <div class="depth-sheet">
           <div class="depth-cols">
-            <span contenteditable="true">1st depth</span>
-            <span contenteditable="true">2nd depth</span>
-            <span contenteditable="true">3rd depth</span>
-            <span contenteditable="true">4th depth</span>
+            <span contenteditable="true">1 Depth</span>
+            <span contenteditable="true">2 Depth</span>
+            <span contenteditable="true">3 Depth</span>
+            <span contenteditable="true">4 Depth</span>
           </div>
 
           <div class="depth-row"><div class="dcell" contenteditable="true">A 홈</div><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
@@ -2178,15 +2251,14 @@ body {
                 <th colspan="6" contenteditable="true">정보 구조</th>
               </tr>
               <tr>
-                <th contenteditable="true">변경 구분</th>
-                <th contenteditable="true">변경(요청)일</th>
-                <th contenteditable="true">변경 사유</th>
-                <th contenteditable="true">화면 구분</th>
-                <th contenteditable="true">1st Depth</th>
-                <th contenteditable="true">2nd Depth</th>
-                <th contenteditable="true">3rd Depth</th>
-                <th contenteditable="true">4th Depth</th>
-                <th contenteditable="true">5th Depth</th>
+                <th contenteditable="true">화면 유형 / Screen type</th>
+                <th contenteditable="true">화면 레벨 / Level</th>
+                <th contenteditable="true">1 Depth</th>
+                <th contenteditable="true">2 Depth</th>
+                <th contenteditable="true">3 Depth</th>
+                <th contenteditable="true">4 Depth</th>
+                <th contenteditable="true">라벨 / Label</th>
+                <th contenteditable="true">내비 / Nav</th>
               </tr>
             </thead>
             <tbody>
@@ -2400,6 +2472,41 @@ function switchFlowSub(subId) {
   let depthSheet = null;
   let depthHost = null;
   let lastIaFocus = 'depth';
+  let uiLang = localStorage.getItem('pm-grid-ui-lang') || 'ko';
+  let screenTool = null;
+  let screenClipboard = null;
+  let lastScreenPointer = { x: 0, y: 0 };
+
+  function t(ko, en) {
+    return uiLang === 'en' ? en : ko;
+  }
+
+  function syncLangChrome() {
+    document.documentElement.lang = uiLang === 'en' ? 'en' : 'ko';
+    document.documentElement.setAttribute('data-ui-lang', uiLang);
+    document.querySelectorAll('[data-ko][data-en]').forEach((el) => {
+      el.textContent = t(el.getAttribute('data-ko'), el.getAttribute('data-en'));
+    });
+    document.querySelectorAll('.lang-switch button[data-lang]').forEach((btn) => {
+      btn.classList.toggle('active', btn.getAttribute('data-lang') === uiLang);
+    });
+    const lineBtn = document.getElementById('btn-flow-line');
+    if (lineBtn && !lineBtn.getAttribute('data-ko')) {
+      lineBtn.textContent = t('직선', 'Line');
+    }
+  }
+
+  window.setUiLang = (lang) => {
+    uiLang = lang === 'en' ? 'en' : 'ko';
+    try { localStorage.setItem('pm-grid-ui-lang', uiLang); } catch (e) {}
+    syncLangChrome();
+    const deck = document.querySelector('#tab-screens .screen-design-deck') || tabEl('screens');
+    if (deck) {
+      const bar = deck.querySelector('#screen-mini-bar');
+      if (bar) bar.remove();
+      bindScreenChrome();
+    }
+  };
 
   const activeTabKey = () => document.documentElement.getAttribute('data-tab') || 'flow';
   const tabEl = (key = activeTabKey()) => document.getElementById('tab-' + key);
@@ -2479,7 +2586,7 @@ function switchFlowSub(subId) {
         const lab = document.createElement('span');
         lab.textContent = item.label;
         row.appendChild(lab);
-        [['s', '소'], ['m', '중'], ['l', '대']].forEach(([key, name]) => {
+        [['s', t('소', 'S')], ['m', t('중', 'M')], ['l', t('대', 'L')]].forEach(([key, name]) => {
           const b = document.createElement('button');
           b.type = 'button';
           b.className = 'pm-gap';
@@ -2835,9 +2942,9 @@ function switchFlowSub(subId) {
       const data = tableToAoa();
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([depthHeaders(), ...depthToAoa()]), 'Depth');
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, ...data]), '정보구조');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, ...data]), 'IA');
       XLSX.writeFile(wb, `${filenameBase()}-ia.xlsx`);
-      toast('Depth + 정보구조를 한 엑셀 파일로 저장했습니다.');
+      toast(t('Depth + IA 시트를 엑셀로 저장했습니다.', 'Saved Depth + IA sheets as Excel.'));
     } catch (error) { toast(`엑셀 저장 실패: ${error.message}`); }
   };
 
@@ -3194,7 +3301,8 @@ function switchFlowSub(subId) {
         from: ensureNodeId(nodes[i]),
         fromPort: 'b',
         to: ensureNodeId(nodes[i + 1]),
-        toPort: 't'
+        toPort: 't',
+        ortho: true
       });
     }
     setEdges(lane, edges);
@@ -3236,12 +3344,110 @@ function switchFlowSub(subId) {
     return `${tip.x},${tip.y} ${bx + px * w},${by + py * w} ${bx - px * w},${by - py * w}`;
   }
 
+  function orthoElbowPath(p1, p2, fromPort, toPort, axis) {
+    const x1 = p1.x, y1 = p1.y, x2 = p2.x, y2 = p2.y;
+    if (axis === 'h') return 'M ' + x1 + ' ' + y1 + ' L ' + x2 + ' ' + y1;
+    if (axis === 'v') return 'M ' + x1 + ' ' + y1 + ' L ' + x1 + ' ' + y2;
+    const horizFirst = !fromPort || fromPort === 'l' || fromPort === 'r';
+    if (horizFirst) return 'M ' + x1 + ' ' + y1 + ' L ' + x2 + ' ' + y1 + ' L ' + x2 + ' ' + y2;
+    return 'M ' + x1 + ' ' + y1 + ' L ' + x1 + ' ' + y2 + ' L ' + x2 + ' ' + y2;
+  }
+
   function bezierPath(p1, p2, fromPort, toPort) {
-    const d1 = portDir(fromPort);
-    const d2 = portDir(toPort);
-    const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-    const c = Math.max(28, dist * 0.45);
-    return `M ${p1.x} ${p1.y} C ${p1.x + d1[0] * c} ${p1.y + d1[1] * c}, ${p2.x + d2[0] * c} ${p2.y + d2[1] * c}, ${p2.x} ${p2.y}`;
+    return orthoElbowPath(p1, p2, fromPort, toPort);
+  }
+
+  function edgeEndPoints(e, fromNode, toNode) {
+    if (e.ortho) return { p1: nodeCenter(fromNode), p2: nodeCenter(toNode) };
+    return {
+      p1: portAnchor(fromNode, e.fromPort || 'b', null, 10),
+      p2: portAnchor(toNode, e.toPort || 't', null, 18)
+    };
+  }
+
+  function edgeSegments(e, fromNode, toNode) {
+    const { p1, p2 } = edgeEndPoints(e, fromNode, toNode);
+    if (e.axis === 'h' || e.ortho && e.axis === 'h') {
+      return [{ x1: p1.x, y1: p1.y, x2: p2.x, y2: p1.y }];
+    }
+    if (e.axis === 'v' || e.ortho && e.axis === 'v') {
+      return [{ x1: p1.x, y1: p1.y, x2: p1.x, y2: p2.y }];
+    }
+    const horizFirst = !(e.fromPort === 't' || e.fromPort === 'b');
+    if (horizFirst) {
+      return [
+        { x1: p1.x, y1: p1.y, x2: p2.x, y2: p1.y },
+        { x1: p2.x, y1: p1.y, x2: p2.x, y2: p2.y }
+      ];
+    }
+    return [
+      { x1: p1.x, y1: p1.y, x2: p1.x, y2: p2.y },
+      { x1: p1.x, y1: p2.y, x2: p2.x, y2: p2.y }
+    ];
+  }
+
+  function distToSegment(px, py, x1, y1, x2, y2) {
+    const proj = projectOnSegment(px, py, x1, y1, x2, y2);
+    return Math.hypot(px - proj.x, py - proj.y);
+  }
+
+  function clampCornerRadius(w, h, raw) {
+    const cap = Math.max(0, Math.min(Number(w) || 0, Number(h) || 0) / 2);
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(cap, n));
+  }
+
+  function iaCanonicalHeaders() {
+    return [
+      '화면 유형 / Screen type',
+      '화면 레벨 / Level',
+      '1 Depth',
+      '2 Depth',
+      '3 Depth',
+      '4 Depth',
+      '라벨 / Label',
+      '내비 / Nav'
+    ];
+  }
+
+  function iaNestedHeaders() {
+    return [[
+      { title: '화면 / Screen', colspan: 2 },
+      { title: 'Depth 1–4', colspan: 4 },
+      { title: '라벨·내비 / Label·Nav', colspan: 2 }
+    ]];
+  }
+
+  function isCanonicalIaHeaders(headers) {
+    if (!Array.isArray(headers) || headers.length < 8) return false;
+    return /depth/i.test(headers[2] || '') && /label|라벨/i.test(headers[6] || '');
+  }
+
+  function remapLegacyIa(headers, data) {
+    const rows = Array.isArray(data) ? data : [];
+    if (isCanonicalIaHeaders(headers) && rows.every((row) => !row || row.length <= 8)) {
+      return { headers: iaCanonicalHeaders(), data: rows.map((row) => {
+        const next = (row || []).slice(0, 8);
+        while (next.length < 8) next.push('');
+        return next;
+      }) };
+    }
+    const wide = (headers && headers.length >= 9) || rows.some((row) => row && row.length >= 9);
+    if (wide) {
+      return {
+        headers: iaCanonicalHeaders(),
+        data: rows.map((row) => {
+          const r = row || [];
+          const type = r[3] || '';
+          const d1 = r[4] || '', d2 = r[5] || '', d3 = r[6] || '', d4 = r[7] || '';
+          const label = r[8] || '';
+          const level = d4 ? '4' : d3 ? '3' : d2 ? '2' : d1 ? '1' : '';
+          return [type, level, d1, d2, d3, d4, label, ''];
+        })
+      };
+    }
+    return { headers: iaCanonicalHeaders(), data: rows };
   }
 
   function captureFlowGraph() {
@@ -3414,9 +3620,19 @@ function switchFlowSub(subId) {
     const nodes = [...lane.querySelectorAll('.flow-node-box')];
     let maxX = Math.max(lane.clientWidth, 800) + 600;
     let maxY = Math.max(lane.clientHeight, 640) + 800;
+    const byId = Object.fromEntries(nodes.map((n) => [n.dataset.nid, n]));
     nodes.forEach((n) => {
       maxX = Math.max(maxX, Number(n.dataset.fx || 0) + (n.offsetWidth || 96) + 480);
       maxY = Math.max(maxY, Number(n.dataset.fy || 0) + (n.offsetHeight || 52) + 480);
+    });
+    getEdges(lane).forEach((e) => {
+      const a = byId[e.from];
+      const b = byId[e.to];
+      if (!a || !b) return;
+      edgeSegments(e, a, b).forEach((seg) => {
+        maxX = Math.max(maxX, seg.x1, seg.x2, Math.max(seg.x1, seg.x2) + 480);
+        maxY = Math.max(maxY, seg.y1, seg.y2, Math.max(seg.y1, seg.y2) + 480);
+      });
     });
     world.style.width = maxX + 'px';
     world.style.height = maxY + 'px';
@@ -3471,30 +3687,22 @@ function switchFlowSub(subId) {
     edges.forEach((e) => {
       const fromPort = e.fromPort || 'b';
       const toPort = e.toPort || 't';
-      let d;
-      if (e.ortho) {
-        const c1 = nodeCenter(byId[e.from]);
-        const c2 = nodeCenter(byId[e.to]);
-        d = 'M ' + c1.x + ' ' + c1.y + ' L ' + c2.x + ' ' + c2.y;
-      } else {
-        const p1 = portAnchor(byId[e.from], fromPort, null, 10);
-        const p2 = portAnchor(byId[e.to], toPort, null, 18);
-        d = bezierPath(p1, p2, fromPort, toPort);
-      }
+      const ends = edgeEndPoints(e, byId[e.from], byId[e.to]);
+      const d = orthoElbowPath(ends.p1, ends.p2, fromPort, toPort, e.axis || null);
       const hit = document.createElementNS(NS, 'path');
       hit.setAttribute('class', 'flow-link-hit');
       hit.setAttribute('data-eid', e.id);
       hit.setAttribute('d', d);
       const line = document.createElementNS(NS, 'path');
-      line.setAttribute('class', 'flow-link');
+      line.setAttribute('class', e.dash ? 'flow-link is-dash' : 'flow-link');
       line.setAttribute('data-eid', e.id);
       line.setAttribute('d', d);
       line.setAttribute('fill', 'none');
       line.setAttribute('stroke', e.ortho ? '#38bdf8' : '#2563eb');
       line.setAttribute('stroke-width', e.ortho ? '2.2' : '1.8');
       line.setAttribute('stroke-linecap', 'butt');
-      line.setAttribute('stroke-linejoin', 'round');
-      if (e.dash) line.setAttribute('stroke-dasharray', '7 6');
+      line.setAttribute('stroke-linejoin', 'miter');
+      if (e.dash) line.setAttribute('stroke-dasharray', '10 8');
       svg.appendChild(hit);
       svg.appendChild(line);
       if (!e.ortho) {
@@ -3600,6 +3808,33 @@ function switchFlowSub(subId) {
     return [...lane.querySelectorAll('.flow-node-box.selected')];
   }
 
+  function isOnFlowNodeBody(node, clientX, clientY, target) {
+    if (!node) return false;
+    if (target && target.closest && target.closest('.fn-title, .fn-bubble')) return false;
+    const r = node.getBoundingClientRect();
+    return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
+  }
+
+  function hitFlowEdge(lane, clientX, clientY, threshold) {
+    if (!lane) return null;
+    const pt = clientToWorld(lane, clientX, clientY);
+    const z = getZoom(lane);
+    const tol = (threshold || 12) / (z || 1);
+    const nodes = [...lane.querySelectorAll('.flow-node-box')];
+    const byId = Object.fromEntries(nodes.map((n) => [ensureNodeId(n), n]));
+    let best = null;
+    getEdges(lane).forEach((e) => {
+      const a = byId[e.from];
+      const b = byId[e.to];
+      if (!a || !b) return;
+      edgeSegments(e, a, b).forEach((seg) => {
+        const dist = distToSegment(pt.x, pt.y, seg.x1, seg.y1, seg.x2, seg.y2);
+        if (dist <= tol && (!best || dist < best.dist)) best = { id: e.id, dist };
+      });
+    });
+    return best;
+  }
+
   function clearFlowSelection(lane) {
     lane.querySelectorAll('.flow-node-box.selected').forEach((n) => n.classList.remove('selected'));
   }
@@ -3618,7 +3853,7 @@ function switchFlowSub(subId) {
       const from = ensureNodeId(sorted[i]);
       const to = ensureNodeId(sorted[i + 1]);
       const dup = edges.some((e) => e.from === from && e.to === to && e.fromPort === fromPort && e.toPort === toPort);
-      if (!dup) edges.push({ id: uid('e'), from, to, fromPort, toPort });
+      if (!dup) edges.push({ id: uid('e'), from, to, fromPort, toPort, ortho: true, axis });
     }
     setEdges(lane, edges);
     drawFlowArrows(lane);
@@ -3638,12 +3873,12 @@ function switchFlowSub(subId) {
     return {
       type: 'colors',
       colors: [
-        { bg: '#ffffff', border: '#111111', label: '흰색' },
-        { bg: '#fef9c3', border: '#ca8a04', label: '노랑' },
-        { bg: '#dbeafe', border: '#1d4ed8', label: '파랑' },
-        { bg: '#dcfce7', border: '#15803d', label: '초록' },
-        { bg: '#fee2e2', border: '#b91c1c', label: '빨강' },
-        { bg: '#f1f5f9', border: '#475569', label: '회색' }
+        { bg: '#ffffff', border: '#111111', label: t('흰색', 'White') },
+        { bg: '#fef9c3', border: '#ca8a04', label: t('노랑', 'Yellow') },
+        { bg: '#dbeafe', border: '#1d4ed8', label: t('파랑', 'Blue') },
+        { bg: '#dcfce7', border: '#15803d', label: t('초록', 'Green') },
+        { bg: '#fee2e2', border: '#b91c1c', label: t('빨강', 'Red') },
+        { bg: '#f1f5f9', border: '#475569', label: t('회색', 'Gray') }
       ],
       run: (c) => {
         const nodes = selectedFlowNodes(lane);
@@ -3761,14 +3996,14 @@ function switchFlowSub(subId) {
   function selectionMenuItems(lane) {
     if (!lane || selectedFlowNodes(lane).length < 2) return [];
     return [
-      { label: '위에서 아래로 연결', run: () => connectSelectedFlow(lane, 'v') },
-      { label: '왼쪽에서 오른쪽으로 연결', run: () => connectSelectedFlow(lane, 'h') },
-      { label: '선택 연결 끊기', run: () => disconnectSelectedFlow(lane) },
-      { label: 'Clear', run: () => clearSelectedFlowText(lane) },
+      { label: t('위에서 아래로 연결', 'Connect top to bottom'), run: () => connectSelectedFlow(lane, 'v') },
+      { label: t('왼쪽에서 오른쪽으로 연결', 'Connect left to right'), run: () => connectSelectedFlow(lane, 'h') },
+      { label: t('선택 연결 끊기', 'Disconnect selected'), run: () => disconnectSelectedFlow(lane) },
+      { label: t('텍스트 지우기', 'Clear text'), run: () => clearSelectedFlowText(lane) },
       '|',
-      { type: 'gap-row', label: '가로 정렬', run: (level) => alignSelectedFlow(lane, 'h', level) },
-      { type: 'gap-row', label: '세로 정렬', run: (level) => alignSelectedFlow(lane, 'v', level) },
-      { type: 'size-row', label: '크기', run: (size) => setFlowNodeSize(lane, size) },
+      { type: 'gap-row', label: t('가로 정렬', 'Align row'), run: (level) => alignSelectedFlow(lane, 'h', level) },
+      { type: 'gap-row', label: t('세로 정렬', 'Align column'), run: (level) => alignSelectedFlow(lane, 'v', level) },
+      { type: 'size-row', label: t('크기', 'Size'), run: (size) => setFlowNodeSize(lane, size) },
       '|'
     ];
   }
@@ -4129,7 +4364,7 @@ function switchFlowSub(subId) {
         drag.nodes.forEach((item) => {
           let x = Math.max(8, item.x0 + dx);
           let y = Math.max(8, item.y0 + dy);
-          if (item.el.dataset.shape === 'circle') {
+          if (item.el.dataset.shape === 'circle' || item.el.dataset.shape === 'anchor') {
             const locked = constrainCircleToRail(lane, item.el, x, y);
             if (locked.hit) {
               x = locked.x;
@@ -4181,7 +4416,8 @@ function switchFlowSub(subId) {
               from: ensureNodeId(link.fromNode),
               fromPort: link.fromPort,
               to: ensureNodeId(toNode),
-              toPort
+              toPort,
+              ortho: true
             };
             const edges = getEdges(lane);
             const dup = edges.some((e) => e.from === edge.from && e.fromPort === edge.fromPort && e.to === edge.to && e.toPort === edge.toPort);
@@ -4445,30 +4681,291 @@ function switchFlowSub(subId) {
     });
   }
 
-  function makeShape(kind) {
+  function makeShape(kind, x, y) {
     const el = document.createElement('div');
     el.className = 'screen-shape';
     el.dataset.kind = kind;
-    el.contentEditable = 'true';
-    el.textContent = kind === 'bubble' ? '말풍선' : kind === 'text' ? '텍스트' : '도형';
-    el.style.left = '24px';
-    el.style.top = '24px';
+    el.dataset.sid = uid('s');
+    el.contentEditable = 'false';
+    const label = document.createElement('span');
+    label.className = 'shape-label';
+    label.textContent = kind === 'circle' ? t('원', 'Circle') : kind === 'bubble' ? t('말풍선', 'Note') : kind === 'text' ? t('텍스트', 'Text') : t('네모', 'Rect');
+    el.appendChild(label);
+    el.style.left = (x == null ? 24 : x) + 'px';
+    el.style.top = (y == null ? 24 : y) + 'px';
+    el.style.width = kind === 'circle' ? '72px' : '128px';
+    el.style.height = kind === 'circle' ? '72px' : '64px';
+    if (kind === 'rect') {
+      el.dataset.radius = '0';
+      el.style.borderRadius = '0px';
+    }
     return el;
   }
 
   function makeScreenCard() {
     const unit = document.createElement('div');
     unit.className = 'screen-card-unit';
-    unit.innerHTML = `<div class="screen-visual-mock"><div class="mock-toolbar"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-dot"></div><span contenteditable="true" style="font-size:11px;color:#64748b;margin-left:8px;">새 화면</span></div><div class="mock-body-content" style="min-height:280px;background:#f8fafc;"></div></div><div class="callout-desc-panel"><h4 contenteditable="true">새 화면</h4><p contenteditable="true">이 화면에서 사용자가 보는 것을 적습니다.</p></div>`;
+    unit.innerHTML = `<div class="screen-visual-mock"><div class="mock-toolbar"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-dot"></div><span contenteditable="true" style="font-size:11px;color:#64748b;margin-left:8px;">${t('새 화면', 'New screen')}</span></div><div class="mock-body-content" style="min-height:280px;background:#f8fafc;"></div></div><div class="callout-desc-panel"><h4 contenteditable="true">${t('새 화면', 'New screen')}</h4><p contenteditable="true">${t('이 화면에서 사용자가 보는 것을 적습니다.', 'Describe what the user sees on this screen.')}</p></div>`;
     return unit;
+  }
+
+  function selectedScreenShapes(scope) {
+    return [...(scope || document).querySelectorAll('#tab-screens .screen-shape.selected')];
+  }
+
+  function selectScreenShape(canvas, shape, additive) {
+    if (!additive) {
+      document.querySelectorAll('#tab-screens .screen-shape.selected').forEach((el) => el.classList.remove('selected'));
+    }
+    if (shape) shape.classList.add('selected');
+    syncScreenRadiusHandle(shape || (canvas && canvas.querySelector('.screen-shape.selected')));
+  }
+
+  function syncScreenRadiusHandle(shape) {
+    document.querySelectorAll('#tab-screens .screen-radius-handle').forEach((el) => el.remove());
+    if (!shape || shape.dataset.kind !== 'rect' || !shape.classList.contains('selected')) return;
+    const handle = document.createElement('span');
+    handle.className = 'screen-radius-handle';
+    handle.title = t('모서리 둥글기', 'Corner radius');
+    const r = clampCornerRadius(shape.offsetWidth, shape.offsetHeight, shape.dataset.radius || 0);
+    handle.style.right = Math.max(2, r - 4) + 'px';
+    handle.style.top = Math.max(2, r - 4) + 'px';
+    shape.appendChild(handle);
+  }
+
+  function applyScreenRadius(shape, radius) {
+    const r = clampCornerRadius(shape.offsetWidth, shape.offsetHeight, radius);
+    shape.dataset.radius = String(r);
+    shape.style.borderRadius = r + 'px';
+    syncScreenRadiusHandle(shape);
+  }
+
+  function startScreenTextEdit(shape) {
+    if (!shape) return;
+    const label = shape.querySelector('.shape-label') || shape;
+    shape.classList.add('editing');
+    label.contentEditable = 'true';
+    label.focus();
+    const range = document.createRange();
+    range.selectNodeContents(label);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    const stop = () => {
+      label.contentEditable = 'false';
+      shape.classList.remove('editing');
+      label.removeEventListener('blur', stop);
+      saveLocal();
+    };
+    label.addEventListener('blur', stop);
+  }
+
+  function screenColorPalette(fallbackShape) {
+    return {
+      type: 'colors',
+      colors: [
+        { bg: '#ffffff', border: '#111111', label: t('흰색', 'White') },
+        { bg: '#fef9c3', border: '#ca8a04', label: t('노랑', 'Yellow') },
+        { bg: '#dbeafe', border: '#1d4ed8', label: t('파랑', 'Blue') },
+        { bg: '#dcfce7', border: '#15803d', label: t('초록', 'Green') },
+        { bg: '#fee2e2', border: '#b91c1c', label: t('빨강', 'Red') },
+        { bg: '#f1f5f9', border: '#475569', label: t('회색', 'Gray') }
+      ],
+      run: (c) => {
+        const targets = selectedScreenShapes();
+        const list = targets.length ? targets : (fallbackShape ? [fallbackShape] : []);
+        if (!list.length) return;
+        pushTabHistory('screens');
+        list.forEach((n) => {
+          n.style.setProperty('background', c.bg, 'important');
+          n.style.setProperty('border-color', c.border, 'important');
+        });
+        saveLocal();
+      }
+    };
+  }
+
+  function addScreenShape(canvas, kind, clientX, clientY) {
+    if (!canvas) return null;
+    let x = 24, y = 24;
+    if (clientX != null) {
+      const r = canvas.getBoundingClientRect();
+      x = Math.max(8, clientX - r.left - 36);
+      y = Math.max(8, clientY - r.top - 20);
+    }
+    const shape = makeShape(kind, x, y);
+    canvas.appendChild(shape);
+    selectScreenShape(canvas, shape, false);
+    return shape;
+  }
+
+  function duplicateScreenShape(shape) {
+    if (!shape) return null;
+    const copy = shape.cloneNode(true);
+    copy.dataset.sid = uid('s');
+    copy.classList.remove('editing');
+    copy.contentEditable = 'false';
+    copy.querySelectorAll('.screen-radius-handle').forEach((el) => el.remove());
+    copy.style.left = ((parseInt(shape.style.left, 10) || 24) + 16) + 'px';
+    copy.style.top = ((parseInt(shape.style.top, 10) || 24) + 16) + 'px';
+    shape.after(copy);
+    selectScreenShape(shape.closest('.mock-body-content'), copy, false);
+    saveLocal();
+    return copy;
+  }
+
+  function copyScreenSelection() {
+    const shapes = selectedScreenShapes();
+    if (!shapes.length) return false;
+    screenClipboard = shapes.map((n) => ({
+      kind: n.dataset.kind || 'rect',
+      text: (n.querySelector('.shape-label') || n).textContent,
+      left: parseInt(n.style.left, 10) || 0,
+      top: parseInt(n.style.top, 10) || 0,
+      width: n.style.width,
+      height: n.style.height,
+      radius: n.dataset.radius || '',
+      bg: n.style.getPropertyValue('background'),
+      border: n.style.getPropertyValue('border-color')
+    }));
+    return true;
+  }
+
+  function pasteScreenClipboard(clientX, clientY) {
+    if (!screenClipboard || !screenClipboard.length) return;
+    const hit = document.elementFromPoint(clientX || lastScreenPointer.x, clientY || lastScreenPointer.y);
+    const canvas = (hit && hit.closest && hit.closest('#tab-screens .mock-body-content'))
+      || document.querySelector('#tab-screens .screen-card-unit .mock-body-content');
+    if (!canvas) return;
+    pushTabHistory('screens');
+    const minX = Math.min(...screenClipboard.map((s) => s.left));
+    const minY = Math.min(...screenClipboard.map((s) => s.top));
+    const r = canvas.getBoundingClientRect();
+    const ox = Math.max(8, (clientX || r.left + 32) - r.left);
+    const oy = Math.max(8, (clientY || r.top + 32) - r.top);
+    document.querySelectorAll('#tab-screens .screen-shape.selected').forEach((el) => el.classList.remove('selected'));
+    screenClipboard.forEach((item) => {
+      const shape = makeShape(item.kind, ox + (item.left - minX), oy + (item.top - minY));
+      const lab = shape.querySelector('.shape-label');
+      if (lab) lab.textContent = item.text || lab.textContent;
+      else shape.textContent = item.text || shape.textContent;
+      if (item.width) shape.style.width = item.width;
+      if (item.height) shape.style.height = item.height;
+      if (item.radius) applyScreenRadius(shape, item.radius);
+      if (item.bg) shape.style.setProperty('background', item.bg, 'important');
+      if (item.border) shape.style.setProperty('border-color', item.border, 'important');
+      canvas.appendChild(shape);
+      shape.classList.add('selected');
+    });
+    const last = canvas.querySelector('.screen-shape.selected');
+    syncScreenRadiusHandle(last);
+    saveLocal();
+  }
+
+  function setScreenTool(kind) {
+    screenTool = screenTool === kind ? null : kind;
+    document.querySelectorAll('#tab-screens .mock-body-content').forEach((el) => {
+      el.classList.toggle('placing-shape', !!screenTool);
+    });
+    const bar = document.getElementById('screen-mini-bar');
+    if (bar) {
+      [...bar.querySelectorAll('button')].forEach((btn) => {
+        const label = btn.textContent || '';
+        const isRect = /네모|Rect/i.test(label);
+        const isCirc = /원|Circle/i.test(label) && !/화면|Screen/i.test(label);
+        btn.classList.toggle('active', (screenTool === 'rect' && isRect) || (screenTool === 'circle' && isCirc));
+      });
+    }
+  }
+
+  function enableScreenShapeDrag() {
+    document.querySelectorAll('#tab-screens .mock-body-content').forEach((canvas) => {
+      if (canvas.dataset.shapeBound === '1') return;
+      canvas.dataset.shapeBound = '1';
+      let drag = null;
+      let radius = null;
+      canvas.addEventListener('pointerdown', (event) => {
+        lastScreenPointer = { x: event.clientX, y: event.clientY };
+        if (event.button !== 0) return;
+        if (event.target.closest('.screen-radius-handle')) {
+          const shape = event.target.closest('.screen-shape');
+          if (!shape) return;
+          event.preventDefault();
+          event.stopPropagation();
+          radius = { shape, r0: Number(shape.dataset.radius || 0), cx: event.clientX, cy: event.clientY };
+          shape.setPointerCapture(event.pointerId);
+          return;
+        }
+        const shape = event.target.closest('.screen-shape');
+        if (shape) {
+          if (shape.classList.contains('editing')) return;
+          event.preventDefault();
+          selectScreenShape(canvas, shape, event.shiftKey);
+          drag = {
+            shape,
+            x0: parseInt(shape.style.left, 10) || 0,
+            y0: parseInt(shape.style.top, 10) || 0,
+            cx: event.clientX,
+            cy: event.clientY,
+            moved: false
+          };
+          shape.setPointerCapture(event.pointerId);
+          return;
+        }
+        if (screenTool) {
+          event.preventDefault();
+          pushTabHistory('screens');
+          addScreenShape(canvas, screenTool, event.clientX, event.clientY);
+          setScreenTool(null);
+          saveLocal();
+        }
+      });
+      canvas.addEventListener('pointermove', (event) => {
+        lastScreenPointer = { x: event.clientX, y: event.clientY };
+        if (radius) {
+          const box = radius.shape.getBoundingClientRect();
+          const insetX = box.right - event.clientX;
+          const insetY = event.clientY - box.top;
+          applyScreenRadius(radius.shape, Math.max(insetX, insetY, 0));
+          return;
+        }
+        if (!drag) return;
+        if (Math.hypot(event.clientX - drag.cx, event.clientY - drag.cy) > 3) drag.moved = true;
+        const x = Math.max(0, drag.x0 + (event.clientX - drag.cx));
+        const y = Math.max(0, drag.y0 + (event.clientY - drag.cy));
+        drag.shape.style.left = x + 'px';
+        drag.shape.style.top = y + 'px';
+      });
+      canvas.addEventListener('pointerup', () => {
+        if (radius) {
+          pushTabHistory('screens');
+          radius = null;
+          saveLocal();
+          return;
+        }
+        if (drag && drag.moved) {
+          pushTabHistory('screens');
+          saveLocal();
+        }
+        drag = null;
+      });
+      canvas.addEventListener('dblclick', (event) => {
+        const shape = event.target.closest('.screen-shape');
+        if (!shape) return;
+        event.preventDefault();
+        startScreenTextEdit(shape);
+      });
+    });
   }
 
   function bindScreenChrome() {
     const deck = document.querySelector('#tab-screens .screen-design-deck') || tabEl('screens');
-    ensureMiniBar(deck, 'screen-mini-bar', [{
-      label: '화면 추가',
-      run: withHistory(() => deck.appendChild(makeScreenCard()))
-    }]);
+    ensureMiniBar(deck, 'screen-mini-bar', [
+      { label: t('네모', 'Rect'), run: () => setScreenTool('rect') },
+      { label: t('원', 'Circle'), run: () => setScreenTool('circle') },
+      { label: t('화면 추가', 'Add screen'), run: withHistory(() => { deck.appendChild(makeScreenCard()); enableScreenShapeDrag(); }) }
+    ]);
+    enableScreenShapeDrag();
   }
 
   function depthHeaders() {
@@ -4520,14 +5017,20 @@ function switchFlowSub(subId) {
       try { depthHost.jspreadsheet.destroy(); } catch (e) {}
       depthHost.innerHTML = '';
     }
-    const cols = (headers && headers.length ? headers : ['1st depth', '2nd depth', '3rd depth', '4th depth'])
-      .map((title) => ({ type: 'text', title, width: 90, align: 'center' }));
-    const rows = (data && data.length) ? data : Array.from({ length: 20 }, () => cols.map(() => ''));
+    const cols = (headers && headers.length ? headers : ['1 Depth', '2 Depth', '3 Depth', '4 Depth'])
+      .slice(0, 4)
+      .map((title, i) => ({ type: 'text', title: /depth/i.test(title) ? `${i + 1} Depth` : title, width: 100, align: 'center' }));
+    while (cols.length < 4) cols.push({ type: 'text', title: `${cols.length + 1} Depth`, width: 100, align: 'center' });
+    const rows = (data && data.length) ? data.map((row) => {
+      const next = (row || []).slice(0, 4);
+      while (next.length < 4) next.push('');
+      return next;
+    }) : Array.from({ length: 20 }, () => cols.map(() => ''));
     depthSheet = jspreadsheet(depthHost, {
       data: rows,
       columns: cols,
       defaultColAlign: 'center',
-      defaultColWidth: 90,
+      defaultColWidth: 100,
       allowInsertRow: true,
       allowManualInsertRow: true,
       allowInsertColumn: true,
@@ -4569,14 +5072,20 @@ function switchFlowSub(subId) {
       try { iaHost.jspreadsheet.destroy(); } catch (e) {}
       iaHost.innerHTML = '';
     }
-    const cols = (headers && headers.length ? headers : ['변경 구분','변경(요청)일','변경 사유','화면 구분','1st Depth','2nd Depth','3rd Depth','4th Depth','5th Depth'])
-      .map((title) => ({ type: 'text', title, width: 108, align: 'left' }));
-    const rows = (data && data.length) ? data : Array.from({ length: 12 }, () => cols.map(() => ''));
-    iaSheet = jspreadsheet(iaHost, {
+    const mapped = remapLegacyIa(headers, data);
+    const cols = mapped.headers.map((title, i) => ({
+      type: 'text',
+      title,
+      width: i === 0 || i >= 6 ? 140 : i === 1 ? 88 : 110,
+      align: i === 1 ? 'center' : 'left'
+    }));
+    const rows = (mapped.data && mapped.data.length) ? mapped.data : Array.from({ length: 12 }, () => cols.map(() => ''));
+    const iaOpts = {
       data: rows,
       columns: cols,
+      nestedHeaders: iaNestedHeaders(),
       defaultColAlign: 'left',
-      defaultColWidth: 108,
+      defaultColWidth: 110,
       allowInsertRow: true,
       allowManualInsertRow: true,
       allowInsertColumn: true,
@@ -4588,12 +5097,19 @@ function switchFlowSub(subId) {
       tableWidth: '100%',
       tableHeight: '560px',
       onselection: (el, x1, y1, x2, y2) => { lastIaFocus = 'info'; setCoord('정보구조', x1, y1, x2, y2); },
-      onchange: () => { if (!restoring) { pushTabHistory('ia'); saveLocal(); } },
-    });
+      onchange: () => { if (!restoring) { pushTabHistory('ia'); saveLocal(); } }
+    };
+    try {
+      iaSheet = jspreadsheet(iaHost, iaOpts);
+    } catch (e) {
+      delete iaOpts.nestedHeaders;
+      iaSheet = jspreadsheet(iaHost, iaOpts);
+    }
     if (styles && iaSheet.setStyle) {
       try { iaSheet.setStyle(styles); } catch (e) { console.warn(e); }
     }
     try { iaSheet.hideIndex(); } catch (e) {}
+    colorNestedHeaders();
   }
 
   function nestedHeadersFrom(headers) {
@@ -4635,10 +5151,14 @@ function switchFlowSub(subId) {
     if (!row) return;
     [...row.children].forEach((td) => {
       const text = (td.textContent || '').trim();
-      if (text === 'Depth') {
+      if (/Depth/i.test(text)) {
         td.style.background = '#ffedd5';
         td.style.color = '#9a3412';
         td.style.borderColor = '#fdba74';
+      } else if (/라벨|Label|내비|Nav/.test(text)) {
+        td.style.background = '#dbeafe';
+        td.style.color = '#1e3a8a';
+        td.style.borderColor = '#93c5fd';
       } else if (text === '히스토리 관리') {
         td.style.background = '#ffe566';
         td.style.color = '#111';
@@ -4740,6 +5260,16 @@ function switchFlowSub(subId) {
     toast('오른쪽 스프레드시트는 독립 시트입니다. Depth 트리는 왼쪽에서 직접 고칩니다.');
   });
 
+  window.PMGridCore = {
+    t,
+    snapOrtho,
+    orthoElbowPath,
+    distToSegment,
+    clampCornerRadius,
+    iaCanonicalHeaders,
+    remapLegacyIa
+  };
+
   const _origSwitch = window.switchMasterTab;
   window.switchMasterTab = function(tabId, btn) {
     _origSwitch(tabId, btn);
@@ -4752,6 +5282,8 @@ function switchFlowSub(subId) {
 
   document.addEventListener('DOMContentLoaded', () => {
     restoreLocal();
+    syncLangChrome();
+    document.getElementById('lang-btn-' + uiLang)?.classList.add('active');
     bindFlowChrome();
     bindStoryChrome();
     bindScreenChrome();
@@ -4781,35 +5313,75 @@ function switchFlowSub(subId) {
       if (depth) lastDepthCell = depth;
     });
     document.addEventListener('contextmenu', (event) => {
-      const flowLink = event.target.closest?.('#tab-flow .flow-link, #tab-flow .flow-link-hit');
-      if (flowLink) {
-        event.preventDefault();
-        const eid = flowLink.getAttribute('data-eid');
-        const lane = flowLink.closest('.flow-step-lane') || event.target.closest('#tab-flow .flow-step-lane');
+      const flowCanvas = event.target.closest?.('#tab-flow .flow-step-lane');
+      if (flowCanvas) {
+        const flowNode = event.target.closest?.('.flow-node-box');
+        const onBody = isOnFlowNodeBody(flowNode, event.clientX, event.clientY, event.target);
+        const edgeHit = hitFlowEdge(flowCanvas, event.clientX, event.clientY, 14);
         const clickX = event.clientX;
         const clickY = event.clientY;
-        showMenu(clickX, clickY, [
-          { label: '동그라미 추가 / Add circle', run: withHistory(() => {
-            if (!lane || !eid) return;
-            splitFlowEdgeAt(lane, eid, clickX, clickY);
-          }) },
-          { label: '실선 / Solid', run: withHistory(() => {
-            if (!lane || !eid) return;
-            setEdgeDash(lane, eid, false);
-          }) },
-          { label: '점선 / Dashed', run: withHistory(() => {
-            if (!lane || !eid) return;
-            setEdgeDash(lane, eid, true);
-          }) },
-          { label: '연결 끊기', run: withHistory(() => {
-            if (!lane || !eid) return;
-            setEdges(lane, getEdges(lane).filter((e) => e.id !== eid));
-            drawFlowArrows(lane);
-          }) },
-          { label: '방향 바꾸기', run: withHistory(() => {
-            if (!lane || !eid) return;
-            reverseFlowEdge(lane, eid);
-          }) }
+        if (edgeHit && !onBody) {
+          event.preventDefault();
+          const eid = edgeHit.id;
+          const lane = flowCanvas;
+          showMenu(clickX, clickY, [
+            { label: t('동그라미 추가', 'Add circle'), run: withHistory(() => {
+              if (!lane || !eid) return;
+              splitFlowEdgeAt(lane, eid, clickX, clickY);
+            }) },
+            { label: t('실선', 'Solid'), run: withHistory(() => {
+              if (!lane || !eid) return;
+              setEdgeDash(lane, eid, false);
+            }) },
+            { label: t('점선', 'Dashed'), run: withHistory(() => {
+              if (!lane || !eid) return;
+              setEdgeDash(lane, eid, true);
+            }) },
+            { label: t('연결 끊기', 'Disconnect'), run: withHistory(() => {
+              if (!lane || !eid) return;
+              setEdges(lane, getEdges(lane).filter((e) => e.id !== eid));
+              drawFlowArrows(lane);
+            }) },
+            { label: t('방향 바꾸기', 'Reverse'), run: withHistory(() => {
+              if (!lane || !eid) return;
+              reverseFlowEdge(lane, eid);
+            }) }
+          ]);
+          return;
+        }
+        if (flowNode) {
+          event.preventDefault();
+          const lane = flowNode.closest('.flow-step-lane');
+          if (lane && !flowNode.classList.contains('selected')) {
+            clearFlowSelection(lane);
+            flowNode.classList.add('selected');
+          }
+          const editLabel = t('텍스트 수정', 'Edit text');
+          const nodeItems = [
+            ...selectionMenuItems(lane),
+            { label: editLabel, run: () => startFlowTextEdit(flowNode) },
+            { label: t('텍스트 지우기', 'Clear text'), run: () => clearSelectedFlowText(lane) },
+            { type: 'size-row', label: t('크기', 'Size'), run: (size) => setFlowNodeSize(lane, size) },
+            { label: t('앞에 칸 추가', 'Add box before'), run: withHistory(() => { insertFlowNode(flowNode, 'before'); enableFlowDrag(); }) },
+            { label: t('뒤에 칸 추가', 'Add box after'), run: withHistory(() => { insertFlowNode(flowNode, 'after'); enableFlowDrag(); }) },
+            { label: t('순서 · 앞으로', 'Move earlier'), run: () => moveFlowOrder(flowNode, -1) },
+            { label: t('순서 · 뒤로', 'Move later'), run: () => moveFlowOrder(flowNode, 1) },
+            '|',
+            flowColorPalette(lane, flowNode),
+            '|',
+            { label: t('삭제', 'Delete'), run: withHistory(() => deleteFlowNode(flowNode)) }
+          ];
+          if (flowNode.dataset.shape === 'circle') {
+            const at = nodeItems.findIndex((it) => it && it.label === editLabel);
+            nodeItems.splice(at < 0 ? nodeItems.length : at + 1, 0, { label: t('말풍선 추가', 'Add speech bubble'), run: withHistory(() => addFlowBubble(flowNode)) });
+          }
+          showMenu(event.clientX, event.clientY, nodeItems);
+          return;
+        }
+        event.preventDefault();
+        showMenu(event.clientX, event.clientY, [
+          ...selectionMenuItems(flowCanvas),
+          { label: t('노드 추가', 'Add node'), run: () => addFlowNodeAt(flowCanvas, event.clientX, event.clientY) }
         ]);
         return;
       }
@@ -4817,90 +5389,54 @@ function switchFlowSub(subId) {
       if (flowArrow) {
         event.preventDefault();
         showMenu(event.clientX, event.clientY, [
-          { label: '화살표 삭제', run: withHistory(() => flowArrow.remove()) }
+          { label: t('화살표 삭제', 'Delete arrow'), run: withHistory(() => flowArrow.remove()) }
         ]);
         return;
       }
-      const flowNode = event.target.closest?.('#tab-flow .flow-node-box');
-      const flowCanvas = event.target.closest?.('#tab-flow .flow-step-lane');
       const story = event.target.closest?.('#tab-storyboard .story-card');
       const shape = event.target.closest?.('#tab-screens .screen-shape');
       const screen = event.target.closest?.('#tab-screens .screen-card-unit');
       const depthCell = event.target.closest?.('#tab-ia .dcell, #tab-ia .depth-cols span');
-      if (flowCanvas && !flowNode) {
-        event.preventDefault();
-        showMenu(event.clientX, event.clientY, [
-          ...selectionMenuItems(flowCanvas),
-          { label: '노드 추가', run: () => addFlowNodeAt(flowCanvas, event.clientX, event.clientY) }
-        ]);
-        return;
-      }
-      if (!flowNode && !story && !shape && !screen && !depthCell) return;
+      if (!story && !shape && !screen && !depthCell) return;
       event.preventDefault();
-      if (flowNode) {
-        const lane = flowNode.closest('.flow-step-lane');
-        if (lane && !flowNode.classList.contains('selected')) {
-          clearFlowSelection(lane);
-          flowNode.classList.add('selected');
-        }
-        const nodeItems = [
-          ...selectionMenuItems(lane),
-          { label: '텍스트 수정', run: () => startFlowTextEdit(flowNode) },
-          { label: 'Clear', run: () => clearSelectedFlowText(lane) },
-          { type: 'size-row', label: '크기', run: (size) => setFlowNodeSize(lane, size) },
-          { label: '앞에 칸 추가', run: withHistory(() => { insertFlowNode(flowNode, 'before'); enableFlowDrag(); }) },
-          { label: '뒤에 칸 추가', run: withHistory(() => { insertFlowNode(flowNode, 'after'); enableFlowDrag(); }) },
-          { label: '순서 · 앞으로', run: () => moveFlowOrder(flowNode, -1) },
-          { label: '순서 · 뒤로', run: () => moveFlowOrder(flowNode, 1) },
-          '|',
-          flowColorPalette(lane, flowNode),
-          '|',
-          { label: '삭제', run: withHistory(() => deleteFlowNode(flowNode)) }
-        ];
-        if (flowNode.dataset.shape === 'circle') {
-          const at = nodeItems.findIndex((it) => it && it.label === '텍스트 수정');
-          nodeItems.splice(at < 0 ? nodeItems.length : at + 1, 0, { label: '말풍선 추가 / Add speech bubble', run: withHistory(() => addFlowBubble(flowNode)) });
-        }
-        showMenu(event.clientX, event.clientY, nodeItems);
-        return;
-      }
       if (story) {
         showMenu(event.clientX, event.clientY, [
-          { label: '수정', run: () => story.querySelector('h4')?.focus() },
-          { label: '앞에 컷 추가', run: withHistory(() => { story.before(makeStoryCard()); renumberStories(); enableStoryDrag(); }) },
-          { label: '뒤에 컷 추가', run: withHistory(() => { story.after(makeStoryCard()); renumberStories(); enableStoryDrag(); }) },
+          { label: t('수정', 'Edit'), run: () => story.querySelector('h4')?.focus() },
+          { label: t('앞에 컷 추가', 'Add cut before'), run: withHistory(() => { story.before(makeStoryCard()); renumberStories(); enableStoryDrag(); }) },
+          { label: t('뒤에 컷 추가', 'Add cut after'), run: withHistory(() => { story.after(makeStoryCard()); renumberStories(); enableStoryDrag(); }) },
           '|',
-          { label: '삭제', run: withHistory(() => { story.remove(); renumberStories(); }) }
+          { label: t('삭제', 'Delete'), run: withHistory(() => { story.remove(); renumberStories(); }) }
         ]);
         return;
       }
       if (shape) {
+        const canvas = shape.closest('.mock-body-content');
+        if (canvas) selectScreenShape(canvas, shape, false);
         showMenu(event.clientX, event.clientY, [
-          { label: '수정', run: () => shape.focus() },
-          { label: '복제', run: withHistory(() => { const copy = shape.cloneNode(true); copy.style.left = `${(parseInt(shape.style.left)||24)+16}px`; copy.style.top = `${(parseInt(shape.style.top)||24)+16}px`; shape.after(copy); }) },
+          { label: t('텍스트 수정', 'Edit text'), run: () => startScreenTextEdit(shape) },
+          { label: t('복제', 'Duplicate'), run: withHistory(() => duplicateScreenShape(shape)) },
           '|',
-          { label: '삭제', run: withHistory(() => shape.remove()) }
+          screenColorPalette(shape),
+          '|',
+          { label: t('삭제', 'Delete'), run: withHistory(() => { shape.remove(); saveLocal(); }) }
         ]);
         return;
       }
       if (screen) {
         const canvas = screen.querySelector('.mock-body-content');
         showMenu(event.clientX, event.clientY, [
-          { label: '네모 추가', run: withHistory(() => canvas.appendChild(makeShape('rect'))) },
-          { label: '둥근네모 추가', run: withHistory(() => canvas.appendChild(makeShape('round'))) },
-          { label: '원 추가', run: withHistory(() => canvas.appendChild(makeShape('circle'))) },
-          { label: '텍스트 추가', run: withHistory(() => canvas.appendChild(makeShape('text'))) },
-          { label: '말풍선 추가', run: withHistory(() => canvas.appendChild(makeShape('bubble'))) },
+          { label: t('네모 추가', 'Add rectangle'), run: withHistory(() => addScreenShape(canvas, 'rect')) },
+          { label: t('원 추가', 'Add circle'), run: withHistory(() => addScreenShape(canvas, 'circle')) },
           '|',
-          { label: '이 화면 삭제', run: withHistory(() => screen.remove()) }
+          { label: t('이 화면 삭제', 'Delete screen'), run: withHistory(() => screen.remove()) }
         ]);
         return;
       }
       if (depthCell) {
         lastDepthCell = depthCell.classList?.contains('dcell') ? depthCell : lastDepthCell;
         showMenu(event.clientX, event.clientY, [
-          { label: '오른쪽에 Depth 칸 추가', run: () => window.addDepthColumn() },
-          { label: '이 Depth 칸 삭제', run: () => window.removeDepthColumn() }
+          { label: t('오른쪽에 Depth 칸 추가', 'Add Depth column'), run: () => window.addDepthColumn() },
+          { label: t('이 Depth 칸 삭제', 'Delete Depth column'), run: () => window.removeDepthColumn() }
         ]);
       }
     });
@@ -4923,17 +5459,28 @@ function switchFlowSub(subId) {
         event.stopImmediatePropagation();
         window.redoBoard();
       } else if (isC && !editing) {
+        if (activeTabKey() === 'screens' && copyScreenSelection()) {
+          event.preventDefault();
+          toast(t('도형을 복사했습니다.', 'Copied the shape.'));
+          return;
+        }
         const lane = activeFlowLane();
         if (lane && copyFlowSelection(lane)) {
           event.preventDefault();
-          toast('노드를 복사했습니다.');
+          toast(t('노드를 복사했습니다.', 'Copied the node.'));
         }
       } else if (isV && !editing) {
+        if (activeTabKey() === 'screens' && screenClipboard) {
+          event.preventDefault();
+          pasteScreenClipboard(lastScreenPointer.x, lastScreenPointer.y);
+          toast(t('붙여넣었습니다.', 'Pasted.'));
+          return;
+        }
         const lane = activeFlowLane();
         if (lane && flowClipboard) {
           event.preventDefault();
           pasteFlowClipboard(lane, lastFlowPointer.x, lastFlowPointer.y);
-          toast('붙여넣었습니다.');
+          toast(t('붙여넣었습니다.', 'Pasted.'));
         }
       }
     }, true);
