@@ -177,6 +177,22 @@ body {
   color: #ffffff;
   border-color: #0f172a;
 }
+.f-line-btn {
+  border: 1px solid var(--border-light);
+  background: #f8fafc;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.f-line-btn.is-on {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
 
 .flow-stage {
   background: #ffffff;
@@ -1685,8 +1701,29 @@ body {
 #tab-flow .flow-arrows path.flow-link-hit { pointer-events: stroke; }
 #tab-flow .flow-arrows path.flow-link { cursor: pointer; }
 #tab-flow .flow-arrows polygon.flow-link { pointer-events: auto; cursor: pointer; }
-#tab-flow .flow-arrows path.flow-link-hit { fill: none; stroke: transparent; stroke-width: 14; cursor: pointer; }
+#tab-flow .flow-arrows path.flow-link-hit { fill: none; stroke: transparent; stroke-width: 16; cursor: pointer; }
 #tab-flow .flow-arrows path.flow-temp { pointer-events: none; }
+#tab-flow .flow-node-box.is-circle {
+  width: 22px;
+  min-width: 22px;
+  max-width: 22px;
+  min-height: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  overflow: visible;
+}
+#tab-flow .flow-node-box.is-circle .fn-title {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 96px;
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+}
 
 
 </style>
@@ -1749,6 +1786,7 @@ body {
         <button class="f-sub-btn" onclick="switchFlowSub('function')">기능 & 분기</button>
         <button class="f-sub-btn" onclick="switchFlowSub('screen')">화면 정보</button>
         <button class="f-sub-btn" onclick="switchFlowSub('scenario')">시나리오</button>
+        <button type="button" id="flow-line-toggle" class="f-line-btn" aria-pressed="false">직선 / Line</button>
       </div>
     </div>
 
@@ -2494,6 +2532,7 @@ function switchFlowSub(subId) {
       activeTab: activeTabKey(),
       edits,
       flowGraph: captureFlowGraph(),
+      flowOrtho: isOrthoOn(),
       ia: {
         depthHeaders: depthHeaders(),
         depthData: depthToAoa(),
@@ -2519,6 +2558,7 @@ function switchFlowSub(subId) {
       if (Object.hasOwn(data.edits || {}, el.dataset.editId)) el.innerHTML = data.edits[el.dataset.editId];
     });
     if (data.flowGraph) applyFlowGraph(data.flowGraph);
+    if (data.flowOrtho != null) setOrthoOn(!!data.flowOrtho);
     if (data.activeTab) switchMasterTab(data.activeTab);
   }
 
@@ -2779,6 +2819,120 @@ function switchFlowSub(subId) {
     return box;
   }
 
+  function makeFlowCircleNode(title) {
+    const box = makeFlowNode();
+    box.classList.add('is-circle');
+    box.dataset.kind = 'circle';
+    const titleEl = box.querySelector('.fn-title');
+    if (titleEl) titleEl.textContent = title || '';
+    return box;
+  }
+
+  function nearestPointOnPath(pathEl, clientX, clientY) {
+    const svg = pathEl.ownerSVGElement;
+    if (!svg || !pathEl.getTotalLength) return null;
+    const ctm = pathEl.getScreenCTM();
+    if (!ctm) return null;
+    const pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const local = pt.matrixTransform(ctm.inverse());
+    const len = pathEl.getTotalLength();
+    let bestT = 0;
+    let bestD = Infinity;
+    let bestP = pathEl.getPointAtLength(0);
+    const step = Math.max(2, len / 80);
+    for (let i = 0; i <= len; i += step) {
+      const p = pathEl.getPointAtLength(i);
+      const d = (p.x - local.x) * (p.x - local.x) + (p.y - local.y) * (p.y - local.y);
+      if (d < bestD) {
+        bestD = d;
+        bestT = i;
+        bestP = p;
+      }
+    }
+    return { x: bestP.x, y: bestP.y, t: len ? bestT / len : 0, dist: Math.sqrt(bestD) };
+  }
+
+  function splitPortsAt(pathEl, t, fromPort, toPort) {
+    if (!pathEl.getTotalLength) {
+      return { toCircle: toPort || 't', fromCircle: fromPort || 'b' };
+    }
+    const len = pathEl.getTotalLength();
+    const at = Math.max(0, Math.min(len, t * len));
+    const a = pathEl.getPointAtLength(Math.max(0, at - 4));
+    const b = pathEl.getPointAtLength(Math.min(len, at + 4));
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      const right = dx >= 0;
+      return { toCircle: right ? 'l' : 'r', fromCircle: right ? 'r' : 'l' };
+    }
+    const down = dy >= 0;
+    return { toCircle: down ? 't' : 'b', fromCircle: down ? 'b' : 't' };
+  }
+
+  function splitFlowEdgeAt(lane, eid, clientX, clientY) {
+    if (!lane || !eid) return;
+    const pathEl = lane.querySelector(`svg.flow-arrows path.flow-link-hit[data-eid="${eid}"]`)
+      || lane.querySelector(`svg.flow-arrows path.flow-link[data-eid="${eid}"]`);
+    const edges = getEdges(lane);
+    const edge = edges.find((e) => e.id === eid);
+    if (!edge) return;
+    const nodes = [...lane.querySelectorAll('.flow-node-box')];
+    const byId = Object.fromEntries(nodes.map((n) => [ensureNodeId(n), n]));
+    if (!byId[edge.from] || !byId[edge.to]) return;
+    const near = pathEl ? nearestPointOnPath(pathEl, clientX, clientY) : null;
+    const world = ensureFlowWorld(lane);
+    const pt = near || clientToWorld(lane, clientX, clientY);
+    pushTabHistory('flow');
+    const circle = makeFlowCircleNode();
+    const r = 11;
+    const x = Math.max(2, pt.x - r);
+    const y = Math.max(2, pt.y - r);
+    circle.dataset.fx = String(x);
+    circle.dataset.fy = String(y);
+    circle.style.left = x + 'px';
+    circle.style.top = y + 'px';
+    world.appendChild(circle);
+    ensurePorts(circle);
+    const ports = splitPortsAt(pathEl, near ? near.t : 0.5, edge.fromPort, edge.toPort);
+    const nid = ensureNodeId(circle);
+    const next = edges.filter((e) => e.id !== eid);
+    next.push({
+      id: uid('e'),
+      from: edge.from,
+      fromPort: edge.fromPort,
+      to: nid,
+      toPort: ports.toCircle,
+      dashed: !!edge.dashed
+    });
+    next.push({
+      id: uid('e'),
+      from: nid,
+      fromPort: ports.fromCircle,
+      to: edge.to,
+      toPort: edge.toPort,
+      dashed: !!edge.dashed
+    });
+    setEdges(lane, next);
+    placeFlowNodes(lane);
+    saveLocal();
+    return circle;
+  }
+
+  function toggleFlowEdgeDash(lane, eid) {
+    if (!lane || !eid) return;
+    const edges = getEdges(lane);
+    const edge = edges.find((e) => e.id === eid);
+    if (!edge) return;
+    pushTabHistory('flow');
+    edge.dashed = !edge.dashed;
+    setEdges(lane, edges);
+    drawFlowArrows(lane);
+    saveLocal();
+  }
+
   function arrow() {
     const span = document.createElement('span');
     span.className = 'flow-arrow-next';
@@ -2816,6 +2970,7 @@ function switchFlowSub(subId) {
 
   function bindFlowChrome() {
     bindFlowWheelZoom();
+    bindLineToggle();
     enableFlowDrag();
   }
 
@@ -2908,6 +3063,127 @@ function switchFlowSub(subId) {
     return `M ${p1.x} ${p1.y} C ${p1.x + d1[0] * c} ${p1.y + d1[1] * c}, ${p2.x + d2[0] * c} ${p2.y + d2[1] * c}, ${p2.x} ${p2.y}`;
   }
 
+  let flowOrtho = false;
+
+  function isOrthoOn() {
+    return !!flowOrtho;
+  }
+
+  function setOrthoOn(on) {
+    flowOrtho = !!on;
+    const btn = document.getElementById('flow-line-toggle');
+    if (btn) {
+      btn.classList.toggle('is-on', flowOrtho);
+      btn.setAttribute('aria-pressed', flowOrtho ? 'true' : 'false');
+    }
+    document.querySelectorAll('#tab-flow .flow-step-lane').forEach((lane) => drawFlowArrows(lane));
+  }
+
+  function bindLineToggle() {
+    const btn = document.getElementById('flow-line-toggle');
+    if (!btn || btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setOrthoOn(!isOrthoOn());
+      saveLocal();
+    });
+    btn.classList.toggle('is-on', isOrthoOn());
+    btn.setAttribute('aria-pressed', isOrthoOn() ? 'true' : 'false');
+  }
+
+  function orthoPoints(p1, p2, fromPort, toPort) {
+    const d1 = portDir(fromPort);
+    const d2 = portDir(toPort);
+    const stub = 20;
+    const a = { x: p1.x + d1[0] * stub, y: p1.y + d1[1] * stub };
+    const b = { x: p2.x + d2[0] * stub, y: p2.y + d2[1] * stub };
+    if (a.y < 2) a.y = Math.max(p1.y, 2);
+    if (b.y < 2) b.y = Math.max(p2.y, 2);
+    if (a.x < 2) a.x = Math.max(p1.x, 2);
+    if (b.x < 2) b.x = Math.max(p2.x, 2);
+    const pts = [p1, a];
+    const fromH = d1[0] !== 0;
+    const toH = d2[0] !== 0;
+    if (fromH === toH) {
+      if (fromH) {
+        const midX = (a.x + b.x) / 2;
+        pts.push({ x: midX, y: a.y }, { x: midX, y: b.y });
+      } else {
+        const midY = (a.y + b.y) / 2;
+        pts.push({ x: a.x, y: midY }, { x: b.x, y: midY });
+      }
+    } else if (fromH) {
+      pts.push({ x: b.x, y: a.y });
+    } else {
+      pts.push({ x: a.x, y: b.y });
+    }
+    pts.push(b, p2);
+    const out = [];
+    pts.forEach((p) => {
+      const prev = out[out.length - 1];
+      if (!prev || Math.abs(prev.x - p.x) > 0.5 || Math.abs(prev.y - p.y) > 0.5) out.push({ x: p.x, y: p.y });
+    });
+    const hv = [out[0]];
+    for (let i = 1; i < out.length; i += 1) {
+      const a0 = hv[hv.length - 1];
+      const p = out[i];
+      if (Math.abs(a0.x - p.x) > 0.5 && Math.abs(a0.y - p.y) > 0.5) hv.push({ x: p.x, y: a0.y });
+      hv.push(p);
+    }
+    return hv;
+  }
+
+  function pointsToPath(pts) {
+    return (pts || []).map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ');
+  }
+
+  function orthoPath(p1, p2, fromPort, toPort) {
+    return pointsToPath(orthoPoints(p1, p2, fromPort, toPort));
+  }
+
+  function linkPath(p1, p2, fromPort, toPort) {
+    return isOrthoOn() ? orthoPath(p1, p2, fromPort, toPort) : bezierPath(p1, p2, fromPort, toPort);
+  }
+
+  function hitFlowLink(event) {
+    const lane = event.target && event.target.closest && event.target.closest('#tab-flow .flow-step-lane');
+    if (!lane) return null;
+    const node = event.target.closest && event.target.closest('#tab-flow .flow-node-box');
+    if (node) {
+      const r = node.getBoundingClientRect();
+      const inset = node.classList.contains('is-circle') ? 3 : 8;
+      const inside = event.clientX >= r.left + inset && event.clientX <= r.right - inset
+        && event.clientY >= r.top + inset && event.clientY <= r.bottom - inset;
+      if (inside) return null;
+    }
+    const fromStack = document.elementsFromPoint(event.clientX, event.clientY)
+      .find((el) => el.classList && (el.classList.contains('flow-link-hit') || el.classList.contains('flow-link')));
+    if (fromStack) return { el: fromStack, eid: fromStack.getAttribute('data-eid'), lane };
+    const svg = lane.querySelector('svg.flow-arrows');
+    if (!svg) return null;
+    let best = null;
+    svg.querySelectorAll('path.flow-link-hit').forEach((path) => {
+      try {
+        if (typeof path.isPointInStroke === 'function') {
+          const pt = svg.createSVGPoint();
+          pt.x = event.clientX;
+          pt.y = event.clientY;
+          const ctm = path.getScreenCTM();
+          if (ctm) {
+            const local = pt.matrixTransform(ctm.inverse());
+            if (path.isPointInStroke(local)) best = { el: path, eid: path.getAttribute('data-eid'), lane };
+          }
+        }
+      } catch (error) { /* ignore */ }
+      if (best) return;
+      const near = nearestPointOnPath(path, event.clientX, event.clientY);
+      if (near && near.dist <= 10) best = { el: path, eid: path.getAttribute('data-eid'), lane };
+    });
+    return best;
+  }
+
   function captureFlowGraph() {
     return [...document.querySelectorAll('#tab-flow .flow-step-lane')].map((lane) => ({
       id: ensureLaneId(lane),
@@ -2915,7 +3191,12 @@ function switchFlowSub(subId) {
       nodes: [...lane.querySelectorAll('.flow-node-box')].map((n) => ({
         nid: ensureNodeId(n),
         fx: n.dataset.fx,
-        fy: n.dataset.fy
+        fy: n.dataset.fy,
+        kind: n.dataset.kind || (n.classList.contains('is-circle') ? 'circle' : 'box'),
+        title: n.querySelector('.fn-title')?.innerText || '',
+        size: n.dataset.size || 'm',
+        bg: n.style.getPropertyValue('background'),
+        border: n.style.getPropertyValue('border-color')
       }))
     }));
   }
@@ -2927,11 +3208,35 @@ function switchFlowSub(subId) {
       const lane = lanes.find((l) => l.dataset.laneId === g.id) || lanes[i];
       if (!lane) return;
       if (g.id) lane.dataset.laneId = g.id;
+      const world = ensureFlowWorld(lane);
       const nodes = [...lane.querySelectorAll('.flow-node-box')];
       (g.nodes || []).forEach((info, idx) => {
-        const node = (info.nid && nodes.find((n) => n.dataset.nid === info.nid)) || nodes[idx];
+        let node = (info.nid && nodes.find((n) => n.dataset.nid === info.nid)) || null;
+        if (!node && info.kind === 'circle') {
+          node = makeFlowCircleNode(info.title);
+          if (info.nid) node.dataset.nid = info.nid;
+          world.appendChild(node);
+          nodes.push(node);
+        } else if (!node) {
+          node = nodes[idx];
+        }
         if (!node) return;
         if (info.nid) node.dataset.nid = info.nid;
+        if (info.kind === 'circle') {
+          node.classList.add('is-circle');
+          node.dataset.kind = 'circle';
+        }
+        if (info.title != null && info.kind === 'circle') {
+          const title = node.querySelector('.fn-title');
+          if (title) title.textContent = info.title;
+        }
+        if (info.size) {
+          node.dataset.size = info.size;
+          node.classList.remove('size-s', 'size-m', 'size-l');
+          node.classList.add('size-' + info.size);
+        }
+        if (info.bg) node.style.setProperty('background', info.bg, 'important');
+        if (info.border) node.style.setProperty('border-color', info.border, 'important');
         if (info.fx != null) {
           node.dataset.fx = String(info.fx);
           node.style.left = info.fx + 'px';
@@ -3102,7 +3407,8 @@ function switchFlowSub(subId) {
       from: cur.to,
       fromPort: cur.toPort,
       to: cur.from,
-      toPort: cur.fromPort
+      toPort: cur.fromPort,
+      dashed: !!cur.dashed
     };
     const next = edges.filter((e, i) => {
       if (i === idx) return false;
@@ -3136,11 +3442,14 @@ function switchFlowSub(subId) {
       const p2 = portAnchor(byId[e.to], toPort, null, 18);
       const tip = portAnchor(byId[e.to], toPort, null, 4);
       const inward = portDir(toPort).map((v) => -v);
-      const d = bezierPath(p1, p2, fromPort, toPort);
+      const d = linkPath(p1, p2, fromPort, toPort);
       const hit = document.createElementNS(NS, 'path');
       hit.setAttribute('class', 'flow-link-hit');
       hit.setAttribute('data-eid', e.id);
       hit.setAttribute('d', d);
+      hit.setAttribute('fill', 'none');
+      hit.setAttribute('stroke', 'transparent');
+      hit.setAttribute('stroke-width', '16');
       const line = document.createElementNS(NS, 'path');
       line.setAttribute('class', 'flow-link');
       line.setAttribute('data-eid', e.id);
@@ -3149,7 +3458,8 @@ function switchFlowSub(subId) {
       line.setAttribute('stroke', '#2563eb');
       line.setAttribute('stroke-width', '1.8');
       line.setAttribute('stroke-linecap', 'butt');
-      line.setAttribute('stroke-linejoin', 'round');
+      line.setAttribute('stroke-linejoin', 'miter');
+      if (e.dashed) line.setAttribute('stroke-dasharray', '8 6');
       const head = document.createElementNS(NS, 'polygon');
       head.setAttribute('class', 'flow-link');
       head.setAttribute('data-eid', e.id);
@@ -3217,6 +3527,7 @@ function switchFlowSub(subId) {
     if (!title) return;
     const lane = node.closest('.flow-step-lane');
     title.contentEditable = 'true';
+    title.style.pointerEvents = 'auto';
     title.focus();
     const range = document.createRange();
     range.selectNodeContents(title);
@@ -3236,6 +3547,7 @@ function switchFlowSub(subId) {
     const onInput = () => relayout();
     const stop = () => {
       title.contentEditable = 'false';
+      title.style.pointerEvents = '';
       title.removeEventListener('blur', stop);
       title.removeEventListener('keydown', onKey);
       title.removeEventListener('input', onInput);
@@ -3451,10 +3763,11 @@ function switchFlowSub(subId) {
         bg: n.style.getPropertyValue('background'),
         border: n.style.getPropertyValue('border-color'),
         size: n.dataset.size || 'm',
+        kind: n.dataset.kind || (n.classList.contains('is-circle') ? 'circle' : 'box'),
         oldId: n.dataset.nid
       })),
       edges: getEdges(lane).filter((e) => ids.has(e.from) && ids.has(e.to)).map((e) => ({
-        from: e.from, to: e.to, fromPort: e.fromPort, toPort: e.toPort
+        from: e.from, to: e.to, fromPort: e.fromPort, toPort: e.toPort, dashed: !!e.dashed
       }))
     };
     return true;
@@ -3468,7 +3781,7 @@ function switchFlowSub(subId) {
     clearFlowSelection(lane);
     const idMap = {};
     flowClipboard.nodes.forEach((item) => {
-      const node = makeFlowNode();
+      const node = item.kind === 'circle' ? makeFlowCircleNode(item.title) : makeFlowNode();
       const title = node.querySelector('.fn-title');
       if (title) title.textContent = item.title;
       const x = Math.max(8, Math.round((origin.x + item.dx) / 8) * 8);
@@ -3491,7 +3804,7 @@ function switchFlowSub(subId) {
     const edges = getEdges(lane);
     flowClipboard.edges.forEach((e) => {
       if (!idMap[e.from] || !idMap[e.to]) return;
-      edges.push({ id: uid('e'), from: idMap[e.from], to: idMap[e.to], fromPort: e.fromPort, toPort: e.toPort });
+      edges.push({ id: uid('e'), from: idMap[e.from], to: idMap[e.to], fromPort: e.fromPort, toPort: e.toPort, dashed: !!e.dashed });
     });
     setEdges(lane, edges);
     placeFlowNodes(lane);
@@ -3631,7 +3944,7 @@ function switchFlowSub(subId) {
           : clientToWorld(lane, x, y);
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('class', 'flow-temp');
-        path.setAttribute('d', bezierPath(p1, p2, link.fromPort, link.toPort || 'l'));
+        path.setAttribute('d', linkPath(p1, p2, link.fromPort, link.toPort || 'l'));
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke', '#2563eb');
         path.setAttribute('stroke-width', '1.6');
@@ -4397,12 +4710,21 @@ function switchFlowSub(subId) {
       if (depth) lastDepthCell = depth;
     });
     document.addEventListener('contextmenu', (event) => {
-      const flowLink = event.target.closest?.('#tab-flow .flow-link, #tab-flow .flow-link-hit');
-      if (flowLink) {
+      const flowLink = hitFlowLink(event) || (() => {
+        const el = event.target.closest?.('#tab-flow .flow-link, #tab-flow .flow-link-hit');
+        if (!el) return null;
+        return { el, eid: el.getAttribute('data-eid'), lane: el.closest('.flow-step-lane') || event.target.closest('#tab-flow .flow-step-lane') };
+      })();
+      if (flowLink && flowLink.eid) {
         event.preventDefault();
-        const eid = flowLink.getAttribute('data-eid');
-        const lane = flowLink.closest('.flow-step-lane') || event.target.closest('#tab-flow .flow-step-lane');
+        event.stopPropagation();
+        const eid = flowLink.eid;
+        const lane = flowLink.lane || event.target.closest('#tab-flow .flow-step-lane');
+        const edge = lane ? getEdges(lane).find((e) => e.id === eid) : null;
         showMenu(event.clientX, event.clientY, [
+          { label: '원 노드로 분할', run: () => splitFlowEdgeAt(lane, eid, event.clientX, event.clientY) },
+          { label: edge && edge.dashed ? '실선으로' : '점선으로', run: () => toggleFlowEdgeDash(lane, eid) },
+          '|',
           { label: '연결 끊기', run: withHistory(() => {
             if (!lane || !eid) return;
             setEdges(lane, getEdges(lane).filter((e) => e.id !== eid));
