@@ -20,9 +20,13 @@ const src = [
   extractFn('isCanonicalIaHeaders'),
   extractFn('remapLegacyIa'),
   extractFn('iaLockedAoa'),
-  extractFn('iaLockedDepthAoa')
+  extractFn('iaLockedDepthAoa'),
+  extractFn('forbiddenSampleWords'),
+  extractFn('hasForbiddenSample'),
+  extractFn('sanitizeHtmlBlob'),
+  extractFn('sanitizeImportedBoard')
 ].join('\n');
-const fn = new Function('window', src + '; return { snapOrtho, orthoElbowPath, clampCornerRadius, iaCanonicalHeaders, remapLegacyIa, iaLockedAoa, iaLockedDepthAoa };');
+const fn = new Function('window', src + '; return { snapOrtho, orthoElbowPath, clampCornerRadius, iaCanonicalHeaders, remapLegacyIa, iaLockedAoa, iaLockedDepthAoa, forbiddenSampleWords, hasForbiddenSample, sanitizeImportedBoard };');
 const core = fn(sandbox);
 
 test('snapOrtho keeps a horizontal rail', () => {
@@ -117,6 +121,50 @@ test('class studio seed is empty PM Grid language with a 3-frame Story', () => {
   assert.match(html, /data-screen-role="admin"/);
   assert.match(html, /id="export-png-btn"/);
   assert.match(html, /id="export-excel-btn"/);
+});
+
+test('sanitizeImportedBoard drops 수능 과외 OCR 손풀이 rows from a v1 board', () => {
+  const dirty = {
+    schema: 'pm-grid-board',
+    version: 1,
+    flowHtml: '<div class="fn-title">수능 대비</div>',
+    storyHtml: '<div class="fn-title">과외 일정</div>',
+    screensHtml: '<div class="shape-label">OCR 컷</div>',
+    edits: { 'pmg-0': '손풀이 메모' },
+    ia: {
+      headers: ['화면 구분 / Screen type', '화면 레벨 / Level', '1 Depth', '2 Depth', '3 Depth', '4 Depth', '라벨 / Label', '내비 / Nav'],
+      data: [
+        ['웹 / Web', '2', '홈 / Home', '아레나 / Arena', '', '', '아레나 / Arena', ''],
+        ['웹 / Web', '2', '수능', '과외', '', '', 'OCR', '손풀이']
+      ],
+      depthData: [
+        ['홈 / Home', '', '', ''],
+        ['', '수능', '', '']
+      ],
+      table: '<table><tr><td>아레나 / Arena</td></tr><tr><td>수능 홈</td></tr></table>'
+    },
+    flowGraph: [{ nodes: [{ title: '수능 시작', letter: '', bubble: '' }, { title: '아레나 / Arena', letter: '', bubble: '' }] }],
+    screenShapes: [{ shapes: [{ text: 'OCR 박스' }, { text: '버전 / Version' }] }]
+  };
+  const out = core.sanitizeImportedBoard(dirty);
+  assert.equal(out.stripped, true);
+  assert.equal(out.data.version, 1);
+  assert.deepEqual(out.data.ia.data, [['웹 / Web', '2', '홈 / Home', '아레나 / Arena', '', '', '아레나 / Arena', '']]);
+  assert.deepEqual(out.data.ia.depthData, [['홈 / Home', '', '', '']]);
+  assert.equal(out.data.ia.table.includes('수능'), false);
+  assert.equal(out.data.ia.table.includes('아레나 / Arena'), true);
+  assert.equal(out.data.flowHtml.includes('수능'), false);
+  assert.equal(out.data.storyHtml.includes('과외'), false);
+  assert.equal(out.data.screensHtml.includes('OCR'), false);
+  assert.equal(out.data.edits['pmg-0'].includes('손풀이'), false);
+  assert.equal(out.data.flowGraph[0].nodes[0].title, '');
+  assert.equal(out.data.flowGraph[0].nodes[1].title, '아레나 / Arena');
+  assert.equal(out.data.screenShapes[0].shapes[0].text, '');
+  assert.equal(out.data.screenShapes[0].shapes[1].text, '버전 / Version');
+  assert.equal(html.includes("pm-grid-board-v3"), true);
+  assert.equal(html.includes("pm-grid-board-v1"), false);
+  assert.equal(core.hasForbiddenSample('아레나 / Arena'), false);
+  assert.equal(core.hasForbiddenSample('수능'), true);
 });
 
 test('frontend developer and korean rules stay always-on', () => {

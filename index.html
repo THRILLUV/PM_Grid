@@ -2544,6 +2544,8 @@ function switchFlowSub(subId) {
   }
 
   function restoreSnapshot(data) {
+    const cleaned = sanitizeImportedBoard(data);
+    data = cleaned.data;
     if (!data || String(data.schema || '').indexOf('pm-grid') < 0) throw new Error('PM Grid JSON 백업 파일이 아닙니다.');
     if (data.ia?.depthData || data.ia?.depthHeaders) mountDepthSpreadsheet(data.ia.depthHeaders, data.ia.depthData, data.ia.depthStyles);
     else bootDepthSpreadsheet();
@@ -3312,6 +3314,84 @@ function switchFlowSub(subId) {
         return next;
       })
     };
+  }
+
+  function forbiddenSampleWords() {
+    return ['\uC218\uB2A5', '\uACFC\uC678', '\u004F\u0043\u0052', '\uC190\uD480\uC774'];
+  }
+
+  function hasForbiddenSample(value) {
+    const text = String(value == null ? '' : value);
+    return forbiddenSampleWords().some((word) => text.indexOf(word) >= 0);
+  }
+
+  function sanitizeHtmlBlob(html) {
+    if (html == null) return html;
+    let out = String(html);
+    if (!hasForbiddenSample(out)) return out;
+    out = out.replace(/<tr\b[\s\S]*?<\/tr>/gi, (row) => (hasForbiddenSample(row) ? '' : row));
+    forbiddenSampleWords().forEach((word) => {
+      out = out.split(word).join('');
+    });
+    return out;
+  }
+
+  function sanitizeImportedBoard(data) {
+    if (!data || typeof data !== 'object') return { data: data, stripped: false };
+    const next = JSON.parse(JSON.stringify(data));
+    let stripped = false;
+    const filterRows = (rows) => {
+      if (!Array.isArray(rows)) return rows;
+      const kept = rows.filter((row) => !hasForbiddenSample((row || []).join(' ')));
+      if (kept.length !== rows.length) stripped = true;
+      return kept;
+    };
+    if (next.ia) {
+      if (Array.isArray(next.ia.data)) next.ia.data = filterRows(next.ia.data);
+      if (Array.isArray(next.ia.depthData)) next.ia.depthData = filterRows(next.ia.depthData);
+      if (typeof next.ia.table === 'string') {
+        const cleaned = sanitizeHtmlBlob(next.ia.table);
+        if (cleaned !== next.ia.table) stripped = true;
+        next.ia.table = cleaned;
+      }
+    }
+    ['flowHtml', 'storyHtml', 'screensHtml'].forEach((key) => {
+      if (typeof next[key] === 'string') {
+        const cleaned = sanitizeHtmlBlob(next[key]);
+        if (cleaned !== next[key]) stripped = true;
+        next[key] = cleaned;
+      }
+    });
+    if (next.edits && typeof next.edits === 'object') {
+      Object.keys(next.edits).forEach((id) => {
+        const cleaned = sanitizeHtmlBlob(String(next.edits[id] == null ? '' : next.edits[id]));
+        if (cleaned !== next.edits[id]) stripped = true;
+        next.edits[id] = cleaned;
+      });
+    }
+    if (Array.isArray(next.flowGraph)) {
+      next.flowGraph.forEach((lane) => {
+        (lane.nodes || []).forEach((node) => {
+          ['title', 'letter', 'bubble'].forEach((key) => {
+            if (hasForbiddenSample(node[key])) {
+              node[key] = '';
+              stripped = true;
+            }
+          });
+        });
+      });
+    }
+    if (Array.isArray(next.screenShapes)) {
+      next.screenShapes.forEach((entry) => {
+        (entry && entry.shapes ? entry.shapes : []).forEach((shape) => {
+          if (hasForbiddenSample(shape.text)) {
+            shape.text = '';
+            stripped = true;
+          }
+        });
+      });
+    }
+    return { data: next, stripped };
   }
 
   function captureFlowGraph() {
@@ -5256,7 +5336,10 @@ function switchFlowSub(subId) {
     iaCanonicalHeaders,
     remapLegacyIa,
     iaLockedAoa,
-    iaLockedDepthAoa
+    iaLockedDepthAoa,
+    forbiddenSampleWords,
+    hasForbiddenSample,
+    sanitizeImportedBoard
   };
 
   const _origSwitch = window.switchMasterTab;
@@ -5486,9 +5569,13 @@ function switchFlowSub(subId) {
       if (!file) return;
       try {
         pushTabHistory();
-        restoreSnapshot(JSON.parse(await file.text()));
+        const parsed = JSON.parse(await file.text());
+        const preview = sanitizeImportedBoard(parsed);
+        restoreSnapshot(parsed);
         saveLocal();
-        toast(t('JSON 백업을 불러왔습니다.', 'Loaded the JSON backup.'));
+        toast(preview.stripped
+          ? t('옛 샘플 행을 비우고 불러왔습니다.', 'Dropped old sample rows, then loaded the board.')
+          : t('JSON 백업을 불러왔습니다.', 'Loaded the JSON backup.'));
       } catch (error) { toast(t('JSON을 불러오지 못했습니다.', 'Could not load JSON.') + ' ' + error.message); }
       event.target.value = '';
     });
