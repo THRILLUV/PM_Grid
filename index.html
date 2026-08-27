@@ -2713,7 +2713,10 @@ function switchFlowSub(subId) {
       exportedAt: new Date().toISOString(),
       activeTab: activeTabKey(),
       edits,
+      flowHtml: tabEl('flow')?.innerHTML || '',
+      screensHtml: tabEl('screens')?.innerHTML || '',
       flowGraph: captureFlowGraph(),
+      screenShapes: captureScreenShapes(),
       ia: {
         depthHeaders: depthHeaders(),
         depthData: depthToAoa(),
@@ -2735,10 +2738,13 @@ function switchFlowSub(subId) {
       if (wrap) wrap.innerHTML = data.ia.table;
       bootSpreadsheetFromTable();
     }
+    if (data.flowHtml && tabEl('flow')) tabEl('flow').innerHTML = data.flowHtml;
+    if (data.screensHtml && tabEl('screens')) tabEl('screens').innerHTML = data.screensHtml;
     indexEditableFields().forEach((el) => {
       if (Object.hasOwn(data.edits || {}, el.dataset.editId)) el.innerHTML = data.edits[el.dataset.editId];
     });
     if (data.flowGraph) applyFlowGraph(data.flowGraph);
+    if (data.screenShapes) applyScreenShapes(data.screenShapes);
     if (data.activeTab) switchMasterTab(data.activeTab);
   }
 
@@ -2750,8 +2756,12 @@ function switchFlowSub(subId) {
   function restoreLocal() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) restoreSnapshot(JSON.parse(raw));
+      if (raw) {
+        restoreSnapshot(JSON.parse(raw));
+        return true;
+      }
     } catch (error) { console.warn('PM Grid local restore failed', error); }
+    return false;
   }
 
   async function renderCurrentTab() {
@@ -3457,7 +3467,14 @@ function switchFlowSub(subId) {
       nodes: [...lane.querySelectorAll('.flow-node-box')].map((n) => ({
         nid: ensureNodeId(n),
         fx: n.dataset.fx,
-        fy: n.dataset.fy
+        fy: n.dataset.fy,
+        shape: n.dataset.shape || '',
+        size: n.dataset.size || 'm',
+        title: n.querySelector('.fn-title')?.innerText || '',
+        letter: n.querySelector('.fn-letter')?.innerText || '',
+        bubble: n.querySelector('.fn-bubble')?.innerText || '',
+        bg: n.style.getPropertyValue('background'),
+        border: n.style.getPropertyValue('border-color')
       }))
     }));
   }
@@ -3469,11 +3486,34 @@ function switchFlowSub(subId) {
       const lane = lanes.find((l) => l.dataset.laneId === g.id) || lanes[i];
       if (!lane) return;
       if (g.id) lane.dataset.laneId = g.id;
+      const world = ensureFlowWorld(lane);
       const nodes = [...lane.querySelectorAll('.flow-node-box')];
+      const byNid = Object.fromEntries(nodes.map((n) => [n.dataset.nid, n]));
       (g.nodes || []).forEach((info, idx) => {
-        const node = (info.nid && nodes.find((n) => n.dataset.nid === info.nid)) || nodes[idx];
-        if (!node) return;
+        let node = (info.nid && byNid[info.nid]) || nodes[idx];
+        if (!node) {
+          node = info.shape === 'circle' ? makeFlowCircle() : info.shape === 'anchor' ? makeFlowAnchor() : makeFlowNode();
+          if (info.nid) node.dataset.nid = info.nid;
+          world.appendChild(node);
+          byNid[node.dataset.nid] = node;
+        }
         if (info.nid) node.dataset.nid = info.nid;
+        if (info.shape) node.dataset.shape = info.shape;
+        if (info.size) {
+          node.dataset.size = info.size;
+          node.classList.remove('size-s', 'size-m', 'size-l');
+          node.classList.add('size-' + info.size);
+        }
+        const title = node.querySelector('.fn-title');
+        if (title && info.title != null) title.textContent = info.title;
+        const letter = node.querySelector('.fn-letter');
+        if (letter && info.letter) letter.textContent = info.letter;
+        if (info.bubble) {
+          const bubble = addFlowBubble(node);
+          if (bubble) bubble.textContent = info.bubble;
+        }
+        if (info.bg) node.style.setProperty('background', info.bg, 'important');
+        if (info.border) node.style.setProperty('border-color', info.border, 'important');
         if (info.fx != null) {
           node.dataset.fx = String(info.fx);
           node.style.left = info.fx + 'px';
@@ -3482,6 +3522,7 @@ function switchFlowSub(subId) {
           node.dataset.fy = String(info.fy);
           node.style.top = info.fy + 'px';
         }
+        ensurePorts(node);
       });
       if (g.edges) setEdges(lane, g.edges);
     });
@@ -3853,7 +3894,7 @@ function switchFlowSub(subId) {
       const from = ensureNodeId(sorted[i]);
       const to = ensureNodeId(sorted[i + 1]);
       const dup = edges.some((e) => e.from === from && e.to === to && e.fromPort === fromPort && e.toPort === toPort);
-      if (!dup) edges.push({ id: uid('e'), from, to, fromPort, toPort, ortho: true, axis });
+      if (!dup) edges.push({ id: uid('e'), from, to, fromPort, toPort, ortho: true });
     }
     setEdges(lane, edges);
     drawFlowArrows(lane);
@@ -4968,6 +5009,45 @@ function switchFlowSub(subId) {
     enableScreenShapeDrag();
   }
 
+  function captureScreenShapes() {
+    return [...document.querySelectorAll('#tab-screens .mock-body-content')].map((canvas, index) => ({
+      index,
+      shapes: [...canvas.querySelectorAll('.screen-shape')].map((n) => ({
+        kind: n.dataset.kind || 'rect',
+        text: (n.querySelector('.shape-label') || n).textContent,
+        left: n.style.left,
+        top: n.style.top,
+        width: n.style.width,
+        height: n.style.height,
+        radius: n.dataset.radius || '',
+        bg: n.style.getPropertyValue('background'),
+        border: n.style.getPropertyValue('border-color')
+      }))
+    }));
+  }
+
+  function applyScreenShapes(payload) {
+    const canvases = [...document.querySelectorAll('#tab-screens .mock-body-content')];
+    (payload || []).forEach((item) => {
+      const canvas = canvases[item.index];
+      if (!canvas) return;
+      canvas.querySelectorAll('.screen-shape').forEach((el) => el.remove());
+      (item.shapes || []).forEach((s) => {
+        const x = parseInt(s.left, 10);
+        const y = parseInt(s.top, 10);
+        const shape = makeShape(s.kind, Number.isFinite(x) ? x : 24, Number.isFinite(y) ? y : 24);
+        const lab = shape.querySelector('.shape-label');
+        if (lab && s.text != null) lab.textContent = s.text;
+        if (s.width) shape.style.width = s.width;
+        if (s.height) shape.style.height = s.height;
+        if (s.radius) applyScreenRadius(shape, s.radius);
+        if (s.bg) shape.style.setProperty('background', s.bg, 'important');
+        if (s.border) shape.style.setProperty('border-color', s.border, 'important');
+        canvas.appendChild(shape);
+      });
+    });
+  }
+
   function depthHeaders() {
     if (depthSheet && depthSheet.options && depthSheet.options.columns) {
       return depthSheet.options.columns.map((col, i) => col.title || `Depth ${i + 1}`);
@@ -5038,7 +5118,7 @@ function switchFlowSub(subId) {
       allowDeleteRow: true,
       allowDeleteColumn: true,
       columnSorting: false,
-      tableOverflow: true,
+      tableOverflow: false,
       tableWidth: '100%',
       tableHeight: '560px',
       onselection: (el, x1, y1, x2, y2) => { lastIaFocus = 'depth'; setCoord('정보구조', x1, y1, x2, y2); },
@@ -5093,7 +5173,7 @@ function switchFlowSub(subId) {
       allowDeleteRow: true,
       allowDeleteColumn: true,
       columnSorting: false,
-      tableOverflow: true,
+      tableOverflow: false,
       tableWidth: '100%',
       tableHeight: '560px',
       onselection: (el, x1, y1, x2, y2) => { lastIaFocus = 'info'; setCoord('정보구조', x1, y1, x2, y2); },
@@ -5281,13 +5361,13 @@ function switchFlowSub(subId) {
   };
 
   document.addEventListener('DOMContentLoaded', () => {
-    restoreLocal();
+    const restored = restoreLocal();
     syncLangChrome();
     document.getElementById('lang-btn-' + uiLang)?.classList.add('active');
     bindFlowChrome();
     bindStoryChrome();
     bindScreenChrome();
-    bootSpreadsheetFromTable();
+    if (!restored || !iaSheet) bootSpreadsheetFromTable();
     syncTabChrome(activeTabKey());
     document.getElementById('ia-cell-color')?.addEventListener('input', (event) => applyCellColor(event.target.value));
     document.getElementById('ia-cell-color')?.addEventListener('change', (event) => applyCellColor(event.target.value));
