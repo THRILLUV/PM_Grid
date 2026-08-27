@@ -77,6 +77,7 @@ test('IA headers stay bilingual and keep 4 Depth columns', () => {
   assert.match(html, /<th contenteditable="true">4 Depth<\/th>/);
   assert.match(html, /#ia-spreadsheet table\.jexcel > tbody > tr > td:nth-child\(7\)/);
   assert.match(html, /버전 \/ Version/);
+  assert.match(html, /와이어 \/ Wire/);
 });
 
 test('flow box CSS does not treat every node as an invisible anchor', () => {

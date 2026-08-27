@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" translate="no">
 <head>
 <script>document.documentElement.setAttribute("data-tab", (new URLSearchParams(location.search).get("tab") || (location.hash||"#flow").replace("#","") || "flow"));</script>
 <meta charset="utf-8"/>
@@ -932,14 +932,9 @@ body {
   transform: translateY(-1px);
 }
 .m-export-btn.figma-btn {
-  background: #0f172a;
-  color: #ffffff;
-  border-color: #0f172a;
-}
-.m-export-btn.figma-btn:hover {
-  background: #1e293b;
-  border-color: #1e293b;
-  color: #ffffff;
+  background: #fff;
+  color: #64748b;
+  border-color: #e2e8f0;
 }
 
 /* Toast */
@@ -2009,7 +2004,7 @@ body {
     <div class="master-export-group" style="flex-wrap:wrap; justify-content:flex-end;">
       <button class="m-export-btn" onclick="undoBoard()" data-ko="되돌리기" data-en="Undo" title="Cmd/Ctrl+Z">되돌리기</button>
       <button class="m-export-btn" onclick="redoBoard()" data-ko="다시실행" data-en="Redo" title="Cmd/Ctrl+Shift+Z">다시실행</button>
-      <button class="m-export-btn figma-btn" onclick="exportCurrentTabSVG()" data-ko="레이어 SVG" data-en="Layer SVG">레이어 SVG</button>
+      <button id="export-svg-btn" class="m-export-btn figma-btn" onclick="exportCurrentTabSVG()" data-ko="레이어 SVG" data-en="Layer SVG">레이어 SVG</button>
       <button id="export-png-btn" class="m-export-btn" onclick="exportCurrentTabPNG()" data-ko="PNG" data-en="PNG" title="PNG">PNG</button>
       <button id="export-excel-btn" class="m-export-btn" onclick="exportIAExcel()" data-ko="엑셀" data-en="Excel" title="XLSX" style="display:none">엑셀</button>
       <label id="ia-color-wrap" class="m-export-btn" style="display:none"><span data-ko="셀 색" data-en="Cell color">셀 색</span> <input id="ia-cell-color" type="color" value="#dbeafe" aria-label="Cell color" style="width:28px;height:20px;border:0;padding:0;background:transparent;cursor:pointer"></label>
@@ -2155,6 +2150,7 @@ body {
           <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">취합본 / Compile</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
           <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">화면 / Screen</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
           <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">버전 / Version</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
+          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell" contenteditable="true">화면 / Screen</div><div class="dcell" contenteditable="true">와이어 / Wire</div></div>
           <div class="depth-row"><div class="dcell" contenteditable="true">관리자 / Admin</div><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
         </div>
 
@@ -2183,6 +2179,7 @@ body {
               <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">2</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">취합본 / Compile</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">취합본 / Compile</td><td contenteditable="true"></td></tr>
               <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">2</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">화면 / Screen</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">화면 / Screen</td><td contenteditable="true"></td></tr>
               <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">2</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">버전 / Version</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">버전 / Version</td><td contenteditable="true"></td></tr>
+              <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">4</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">아레나 / Arena</td><td contenteditable="true">화면 / Screen</td><td contenteditable="true">와이어 / Wire</td><td contenteditable="true">와이어 / Wire</td><td contenteditable="true"></td></tr>
               <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">1</td><td contenteditable="true">관리자 / Admin</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">관리자 / Admin</td><td contenteditable="true"></td></tr>
             </tbody>
           </table>
@@ -2747,7 +2744,7 @@ function switchFlowSub(subId) {
 
   window.exportCurrentTabSVG = async () => {
     try {
-      toast('레이어 SVG를 만드는 중…');
+      toast(t('레이어 SVG를 만드는 중…', 'Making layer SVG…'));
       const root = tabEl();
       const key = activeTabKey();
       const size = root.getBoundingClientRect();
@@ -2756,19 +2753,22 @@ function switchFlowSub(subId) {
       else if (key === 'flow') body = layeredFlowSVG(root);
       else if (key === 'screens') body = layeredScreenSVG(root);
       else {
-        toast('이 탭은 표라서 PNG/엑셀이 더 정확합니다. 스토리보드·플로우·화면 탭에서 레이어 SVG를 쓰세요.');
+        toast(t('이 탭은 표라서 엑셀이 맞습니다.', 'This tab is a sheet. Use Excel.'));
         return;
       }
       const svg = `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${Math.ceil(size.width)}" height="${Math.ceil(size.height)}" viewBox="0 0 ${Math.ceil(size.width)} ${Math.ceil(size.height)}" fill="none">\n<rect width="100%" height="100%" fill="#f8fafc"/>\n${body}\n</svg>`;
       download(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), `${filenameBase()}-layers.svg`);
-      toast('레이어 SVG를 저장했습니다. 피그마에 드롭하면 텍스트/이미지가 분리됩니다.');
+      toast(t('레이어 SVG를 저장했습니다.', 'Saved the layer SVG.'));
     } catch (error) { toast(`SVG 저장 실패: ${error.message}`); }
   };
   window.exportToFigmaFile = window.exportCurrentTabSVG;
 
   window.exportIAExcel = () => {
     try {
-      if (!window.XLSX) throw new Error('엑셀 라이브러리를 불러오지 못했습니다.');
+      if (!window.XLSX) {
+        toast(t('엑셀 라이브러리를 불러오지 못했습니다.', 'The Excel library did not load.'));
+        return;
+      }
       const headers = tableHeaders();
       const data = tableToAoa();
       const wb = XLSX.utils.book_new();
@@ -4053,6 +4053,7 @@ function switchFlowSub(subId) {
 
   function enableFlowDrag() {
     document.querySelectorAll('#tab-flow .flow-step-lane, #tab-storyboard .flow-step-lane').forEach((lane) => {
+      lane.setAttribute('translate', 'no');
       placeFlowNodes(lane);
       if (lane.dataset.dragBound === '1') return;
       lane.dataset.dragBound = '1';
@@ -5139,8 +5140,10 @@ function switchFlowSub(subId) {
     const excel = document.getElementById('export-excel-btn');
     const png = document.getElementById('export-png-btn');
     const color = document.getElementById('ia-color-wrap');
+    const svg = document.getElementById('export-svg-btn');
     if (excel) excel.style.display = ia ? '' : 'none';
     if (png) png.style.display = ia ? 'none' : '';
+    if (svg) svg.style.display = ia ? 'none' : '';
     if (color) color.style.display = ia ? 'inline-flex' : 'none';
   }
 
@@ -5201,6 +5204,7 @@ function switchFlowSub(subId) {
 
   const _origSwitch = window.switchMasterTab;
   window.switchMasterTab = function(tabId, btn) {
+    if (typeof toggleFlowLineTool === 'function') toggleFlowLineTool(false);
     _origSwitch(tabId, btn);
     if (tabId === 'flow' || tabId === 'storyboard') bindFlowChrome();
     if (tabId === 'storyboard') bindStoryChrome();
