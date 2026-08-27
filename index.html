@@ -2302,10 +2302,11 @@ function switchFlowSub(subId) {
     document.querySelectorAll('.lang-switch button[data-lang]').forEach((btn) => {
       btn.classList.toggle('active', btn.getAttribute('data-lang') === uiLang);
     });
-    const lineBtn = document.getElementById('btn-flow-line');
-    if (lineBtn && !lineBtn.getAttribute('data-ko')) {
-      lineBtn.textContent = t('직선', 'Line');
-    }
+    const lineHint = t('빈 칸을 클릭한 뒤 끝점을 클릭하거나 드래그합니다.', 'Click empty canvas, then click or drag the end.');
+    document.querySelectorAll('#btn-flow-line, #btn-story-line').forEach((btn) => {
+      btn.title = lineHint;
+      if (!btn.getAttribute('data-ko')) btn.textContent = t('직선', 'Line');
+    });
   }
 
   window.setUiLang = (lang) => {
@@ -2962,8 +2963,8 @@ function switchFlowSub(subId) {
     const snapped = snapOrtho(x0, y0, x1, y1);
     const svg = lane.querySelector('svg.flow-arrows');
     if (svg) svg.querySelectorAll('.flow-temp').forEach((el) => el.remove());
-    if (Math.hypot(snapped.x1 - x0, snapped.y1 - y0) < 16) return;
-    pushTabHistory('flow');
+    if (Math.hypot(snapped.x1 - x0, snapped.y1 - y0) < 16) return false;
+    pushTabHistory(lane.closest('#tab-storyboard') ? 'storyboard' : 'flow');
     const world = ensureFlowWorld(lane);
     const a = makeFlowAnchor();
     const b = makeFlowAnchor();
@@ -2987,6 +2988,7 @@ function switchFlowSub(subId) {
     setEdges(lane, edges);
     drawFlowArrows(lane);
     saveLocal();
+    return true;
   }
 
   function constrainCircleToRail(lane, node, x, y) {
@@ -4172,7 +4174,14 @@ function switchFlowSub(subId) {
         event.preventDefault();
         if (flowLineTool && event.button === 0) {
           const pt = clientToWorld(lane, event.clientX, event.clientY);
+          if (flowLineDraft) {
+            if (persistOrthoLine(flowLineDraft.lane || lane, flowLineDraft.x0, flowLineDraft.y0, pt.x, pt.y)) {
+              flowLineDraft = null;
+            }
+            return;
+          }
           flowLineDraft = { lane, x0: pt.x, y0: pt.y };
+          toast(t('끝점을 클릭하거나 드래그하세요.', 'Click the other end, or drag.'));
           lane.setPointerCapture(event.pointerId);
           return;
         }
@@ -4255,8 +4264,9 @@ function switchFlowSub(subId) {
         lastFlowPointer = { x: event.clientX, y: event.clientY };
         if (flowLineDraft && flowLineDraft.lane === lane) {
           const pt = clientToWorld(lane, event.clientX, event.clientY);
-          persistOrthoLine(lane, flowLineDraft.x0, flowLineDraft.y0, pt.x, pt.y);
-          flowLineDraft = null;
+          if (persistOrthoLine(lane, flowLineDraft.x0, flowLineDraft.y0, pt.x, pt.y)) {
+            flowLineDraft = null;
+          }
           return;
         }
         if (link) {
