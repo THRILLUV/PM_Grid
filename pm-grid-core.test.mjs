@@ -18,9 +18,11 @@ const src = [
   extractFn('clampCornerRadius'),
   extractFn('iaCanonicalHeaders'),
   extractFn('isCanonicalIaHeaders'),
-  extractFn('remapLegacyIa')
+  extractFn('remapLegacyIa'),
+  extractFn('iaLockedAoa'),
+  extractFn('iaLockedDepthAoa')
 ].join('\n');
-const fn = new Function('window', src + '; return { snapOrtho, orthoElbowPath, clampCornerRadius, iaCanonicalHeaders, remapLegacyIa };');
+const fn = new Function('window', src + '; return { snapOrtho, orthoElbowPath, clampCornerRadius, iaCanonicalHeaders, remapLegacyIa, iaLockedAoa, iaLockedDepthAoa };');
 const core = fn(sandbox);
 
 test('snapOrtho keeps a horizontal rail', () => {
@@ -77,7 +79,25 @@ test('IA headers stay bilingual and keep 4 Depth columns', () => {
   assert.match(html, /<th contenteditable="true">4 Depth<\/th>/);
   assert.match(html, /#ia-spreadsheet table\.jexcel > tbody > tr > td:nth-child\(7\)/);
   assert.match(html, /버전 \/ Version/);
-  assert.match(html, /와이어 \/ Wire/);
+  assert.match(html, /홈 \/ Home<\/td><td contenteditable="true">아레나 \/ Arena<\/td><td contenteditable="true">취합본 \/ Compile<\/td><td contenteditable="true">버전 \/ Version/);
+  assert.equal(html.includes('와이어 / Wire'), false);
+  assert.equal(html.includes('전체 프로젝트'), false);
+  assert.equal(html.includes('휴지통'), false);
+  assert.equal(html.includes('요금'), false);
+});
+
+test('iaLockedAoa always writes the 8 IA columns', () => {
+  const locked = core.iaLockedAoa(
+    ['화면 구분 / Screen type', '화면 레벨 / Level'],
+    [['웹 / Web', '2', '홈 / Home', '아레나 / Arena']]
+  );
+  assert.deepEqual(locked.headers, core.iaCanonicalHeaders());
+  assert.equal(locked.headers.length, 8);
+  assert.equal(locked.data[0].length, 8);
+  assert.equal(locked.data[0][3], '아레나 / Arena');
+  const depth = core.iaLockedDepthAoa(['1 Depth', '2 Depth', '3 Depth', '4 Depth', '5 Depth'], [['홈', '아레나', '취합본', '버전', '잘림']]);
+  assert.deepEqual(depth.headers, ['1 Depth', '2 Depth', '3 Depth', '4 Depth']);
+  assert.deepEqual(depth.data[0], ['홈', '아레나', '취합본', '버전']);
 });
 
 test('flow box CSS does not treat every node as an invisible anchor', () => {
@@ -86,7 +106,7 @@ test('flow box CSS does not treat every node as an invisible anchor', () => {
 });
 
 test('class studio seed is empty PM Grid language with a 3-frame Story', () => {
-  const forbidden = ['수능', '과외', '손풀이', 'Node_Lab', 'NodeLab', 'Manyfast', 'nodelab-master-edits', '김선혜'];
+  const forbidden = ['수능', '과외', 'OCR', '손풀이', 'Node_Lab', 'NodeLab', 'Manyfast', 'nodelab-master-edits', '김선혜'];
   forbidden.forEach((word) => {
     assert.equal(html.includes(word), false, word);
   });

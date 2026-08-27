@@ -1417,7 +1417,9 @@ body {
 #ia-spreadsheet table.jexcel > tbody > tr > td:nth-child(7) {
   display: table-cell !important;
   visibility: visible !important;
-  min-width: 88px;
+  min-width: 112px;
+  overflow: visible !important;
+  white-space: nowrap;
 }
 #tab-ia .sheet-wrap { overflow-x: auto; overflow-y: auto; max-height: 640px; }
 #tab-ia .depth-sheet { overflow-x: auto; overflow-y: auto; max-height: 640px; }
@@ -2150,7 +2152,7 @@ body {
           <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">취합본 / Compile</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
           <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">화면 / Screen</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
           <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">버전 / Version</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell" contenteditable="true">화면 / Screen</div><div class="dcell" contenteditable="true">와이어 / Wire</div></div>
+          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell" contenteditable="true">취합본 / Compile</div><div class="dcell" contenteditable="true">버전 / Version</div></div>
           <div class="depth-row"><div class="dcell" contenteditable="true">관리자 / Admin</div><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
         </div>
 
@@ -2179,7 +2181,7 @@ body {
               <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">2</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">취합본 / Compile</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">취합본 / Compile</td><td contenteditable="true"></td></tr>
               <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">2</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">화면 / Screen</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">화면 / Screen</td><td contenteditable="true"></td></tr>
               <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">2</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">버전 / Version</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">버전 / Version</td><td contenteditable="true"></td></tr>
-              <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">4</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">아레나 / Arena</td><td contenteditable="true">화면 / Screen</td><td contenteditable="true">와이어 / Wire</td><td contenteditable="true">와이어 / Wire</td><td contenteditable="true"></td></tr>
+              <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">4</td><td contenteditable="true">홈 / Home</td><td contenteditable="true">아레나 / Arena</td><td contenteditable="true">취합본 / Compile</td><td contenteditable="true">버전 / Version</td><td contenteditable="true">버전 / Version</td><td contenteditable="true">탭</td></tr>
               <tr><td contenteditable="true">웹 / Web</td><td contenteditable="true">1</td><td contenteditable="true">관리자 / Admin</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true">관리자 / Admin</td><td contenteditable="true"></td></tr>
             </tbody>
           </table>
@@ -2769,11 +2771,11 @@ function switchFlowSub(subId) {
         toast(t('엑셀 라이브러리를 불러오지 못했습니다.', 'The Excel library did not load.'));
         return;
       }
-      const headers = tableHeaders();
-      const data = tableToAoa();
+      const ia = iaLockedAoa(tableHeaders(), tableToAoa());
+      const depth = iaLockedDepthAoa(depthHeaders(), depthToAoa());
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([depthHeaders(), ...depthToAoa()]), 'Depth');
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, ...data]), 'IA');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([depth.headers, ...depth.data]), 'Depth');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([ia.headers, ...ia.data]), 'IA');
       XLSX.writeFile(wb, `${filenameBase()}-ia.xlsx`);
       toast(t('Depth + IA 시트를 엑셀로 저장했습니다.', 'Saved Depth + IA sheets as Excel.'));
     } catch (error) { toast(t('엑셀을 저장하지 못했습니다.', 'Could not save Excel.') + ' ' + error.message); }
@@ -3279,7 +3281,37 @@ function switchFlowSub(subId) {
         })
       };
     }
-    return { headers: iaCanonicalHeaders(), data: rows };
+    return {
+      headers: iaCanonicalHeaders(),
+      data: rows.map((row) => {
+        const next = (row || []).slice(0, 8);
+        while (next.length < 8) next.push('');
+        return next;
+      })
+    };
+  }
+
+  function iaLockedAoa(headers, data) {
+    const mapped = remapLegacyIa(headers, data);
+    return {
+      headers: iaCanonicalHeaders(),
+      data: (mapped.data || []).map((row) => {
+        const next = [];
+        for (let i = 0; i < 8; i += 1) next[i] = row && row[i] != null ? String(row[i]) : '';
+        return next;
+      })
+    };
+  }
+
+  function iaLockedDepthAoa(headers, data) {
+    return {
+      headers: ['1 Depth', '2 Depth', '3 Depth', '4 Depth'],
+      data: (data || []).map((row) => {
+        const next = [];
+        for (let i = 0; i < 4; i += 1) next[i] = row && row[i] != null ? String(row[i]) : '';
+        return next;
+      })
+    };
   }
 
   function captureFlowGraph() {
@@ -4961,10 +4993,10 @@ function switchFlowSub(subId) {
       defaultColWidth: 100,
       allowInsertRow: true,
       allowManualInsertRow: true,
-      allowInsertColumn: true,
-      allowManualInsertColumn: true,
+      allowInsertColumn: false,
+      allowManualInsertColumn: false,
       allowDeleteRow: true,
-      allowDeleteColumn: true,
+      allowDeleteColumn: false,
       columnSorting: false,
       tableOverflow: false,
       tableWidth: '100%',
@@ -5016,10 +5048,10 @@ function switchFlowSub(subId) {
       defaultColWidth: 110,
       allowInsertRow: true,
       allowManualInsertRow: true,
-      allowInsertColumn: true,
-      allowManualInsertColumn: true,
+      allowInsertColumn: false,
+      allowManualInsertColumn: false,
       allowDeleteRow: true,
-      allowDeleteColumn: true,
+      allowDeleteColumn: false,
       columnSorting: false,
       tableOverflow: false,
       tableWidth: '100%',
@@ -5163,16 +5195,39 @@ function switchFlowSub(subId) {
   window.deleteSelectedRow = withHistory(() => {
     if (iaSheet && iaSheet.deleteRow) iaSheet.deleteRow();
   });
+  function sheetColCount(inst) {
+    if (!inst) return 0;
+    if (inst.options && inst.options.columns) return inst.options.columns.length;
+    if (typeof inst.getHeaders === 'function') return inst.getHeaders().length;
+    return 0;
+  }
+
   window.insertSheetColumn = withHistory(() => {
+    if (sheetColCount(iaSheet) >= 8) {
+      toast(t('IA 8열은 잠겨 있습니다', 'The 8 IA columns stay locked'));
+      return;
+    }
     if (iaSheet && iaSheet.insertColumn) iaSheet.insertColumn();
   });
   window.deleteSheetColumn = withHistory(() => {
+    if (sheetColCount(iaSheet) <= 8) {
+      toast(t('IA 8열은 잠겨 있습니다', 'The 8 IA columns stay locked'));
+      return;
+    }
     if (iaSheet && iaSheet.deleteColumn) iaSheet.deleteColumn();
   });
   window.addDepthColumn = withHistory(() => {
+    if (sheetColCount(depthSheet) >= 4) {
+      toast(t('깊이 열은 Depth 1–4까지입니다', 'Depth columns stay at Depth 1–4'));
+      return;
+    }
     if (depthSheet && depthSheet.insertColumn) depthSheet.insertColumn();
   });
   window.removeDepthColumn = withHistory(() => {
+    if (sheetColCount(depthSheet) <= 4) {
+      toast(t('Depth 1–4 열은 잠겨 있습니다', 'Depth 1–4 columns stay locked'));
+      return;
+    }
     if (depthSheet && depthSheet.deleteColumn) depthSheet.deleteColumn();
   });
   window.shiftDepth = withHistory((direction) => {
@@ -5199,7 +5254,9 @@ function switchFlowSub(subId) {
     distToSegment,
     clampCornerRadius,
     iaCanonicalHeaders,
-    remapLegacyIa
+    remapLegacyIa,
+    iaLockedAoa,
+    iaLockedDepthAoa
   };
 
   const _origSwitch = window.switchMasterTab;
