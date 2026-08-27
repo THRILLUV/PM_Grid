@@ -77,6 +77,11 @@ test('IA headers stay bilingual and keep 4 Depth columns', () => {
   assert.match(html, /<th contenteditable="true">4 Depth<\/th>/);
 });
 
+test('flow box CSS does not treat every node as an invisible anchor', () => {
+  assert.equal(html.includes('#tab-flow .flow-node-box, #tab-storyboard .flow-node-box[data-shape="anchor"]'), false);
+  assert.match(html, /#tab-flow \.flow-node-box\[data-shape="anchor"\],\n#tab-storyboard \.flow-node-box\[data-shape="anchor"\]/);
+});
+
 test('class studio seed is empty PM Grid language with a 3-frame Story', () => {
   const forbidden = ['수능', '과외', '손풀이', 'Node_Lab', 'NodeLab', 'Manyfast', 'nodelab-master-edits', '김선혜'];
   forbidden.forEach((word) => {
