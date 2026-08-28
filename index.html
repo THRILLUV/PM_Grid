@@ -650,7 +650,7 @@ body {
 }
 .ia-excel-layout {
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -922,7 +922,7 @@ body {
   z-index: 4;
 }
 .ia-excel-layout {
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 /* Export Toolbar */
@@ -1315,8 +1315,8 @@ body {
 }
 #ia-coord-hint { color: var(--text-muted); font-weight: 600; }
 #depth-spreadsheet { width: 100%; background: #fff; }
-.ia-excel-layout { grid-template-columns: 340px minmax(0, 1fr) !important; }
-#tab-ia .depth-sheet { display: block !important; }
+.ia-excel-layout { grid-template-columns: minmax(0, 1fr) !important; }
+#tab-ia .depth-sheet { display: none !important; }
 
 #tab-ia .jexcel_toolbar { display: none !important; }
 #tab-ia .jexcel_content { box-shadow: none !important; border: 0 !important; }
@@ -1404,7 +1404,7 @@ body {
 .ia-action-toolbar { flex-wrap: nowrap; overflow-x: auto; gap: 12px; }
 
 
-.ia-excel-layout { grid-template-columns: 360px minmax(0, 1fr) !important; gap: 12px !important; align-items: stretch !important; }
+.ia-excel-layout { grid-template-columns: minmax(0, 1fr) !important; gap: 0 !important; align-items: stretch !important; }
 #tab-ia .depth-sheet, #tab-ia .sheet-wrap {
   overflow: hidden;
   max-height: none;
@@ -1433,7 +1433,7 @@ body {
   justify-content: flex-end;
   flex-wrap: nowrap !important;
 }
-.ia-excel-layout { grid-template-columns: minmax(420px, 34%) minmax(700px, 1fr) !important; }
+.ia-excel-layout { grid-template-columns: minmax(0, 1fr) !important; }
 
 body.ia-first-screen .master-main { padding: 10px 20px 24px; }
 body.ia-first-screen .master-export-group { flex-basis: auto; max-width: 48vw; }
@@ -1484,8 +1484,13 @@ body.ia-first-screen #ia-coord { width: 110px; padding: 4px 6px; }
   white-space: nowrap;
 }
 #tab-ia .sheet-wrap { overflow-x: auto; overflow-y: auto; max-height: 640px; }
-#tab-ia .depth-sheet { overflow-x: auto; overflow-y: auto; max-height: 640px; }
-#tab-ia .ia-excel-layout { overflow-x: auto; }
+#tab-ia .depth-sheet { display: none !important; }
+#tab-ia .ia-excel-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  overflow-x: auto;
+}
 
 
 .story-card { cursor: grab; }
@@ -1762,7 +1767,22 @@ body.ia-first-screen #ia-coord { width: 110px; padding: 4px 6px; }
 #tab-flow .fn-guide,
 #tab-storyboard .fn-guide { display: none !important; }
 #tab-flow .flow-arrow-next,
-#tab-storyboard .flow-arrow-next { display: none; }
+#tab-storyboard .flow-arrow-next {
+  display: block;
+  position: absolute;
+  transform: none;
+  z-index: 4;
+  pointer-events: none;
+  color: #334155;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  margin: 0;
+}
+#tab-flow .flow-node-box.selected {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
 #tab-flow .flow-arrows,
 #tab-storyboard .flow-arrows {
   position: absolute;
@@ -2184,7 +2204,7 @@ body.ia-first-screen #ia-coord { width: 110px; padding: 4px 6px; }
           <li contenteditable="true">같은 레벨은 같은 행 레벨. 링크 ≠ 자식. 팝업은 바닥 화면과 같은 레벨.</li>
         </ul>
         <p class="edit-hint" contenteditable="true">빈 라벨만 채워 둔 시드다. 아레나·취합본 언어로 적는다.</p>
-        <p class="edit-hint" contenteditable="true">왼쪽 Depth와 오른쪽 시트를 채운 뒤 엑셀로 보낸다. Cmd/Ctrl+Z.</p>
+        <p class="edit-hint" contenteditable="true">한 시트에 화면 구분·레벨·Depth 1–4·라벨·내비를 채운 뒤 엑셀로 보낸다. / Fill Screen type, Level, Depth 1–4, Label, and Nav on this one sheet, then export Excel. Cmd/Ctrl+Z.</p>
       </details>
             <div class="ia-action-toolbar">
         <div class="ia-tool-btn-group">
@@ -2205,22 +2225,6 @@ body.ia-first-screen #ia-coord { width: 110px; padding: 4px 6px; }
       </div>
 
       <div class="ia-excel-layout">
-        <div class="depth-sheet">
-          <div class="depth-cols">
-            <span contenteditable="true">1 Depth</span>
-            <span contenteditable="true">2 Depth</span>
-            <span contenteditable="true">3 Depth</span>
-            <span contenteditable="true">4 Depth</span>
-          </div>
-          <div class="depth-row"><div class="dcell" contenteditable="true">홈 / Home</div><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">아레나 / Arena</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">취합본 / Compile</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">화면 / Screen</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">버전 / Version</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell" contenteditable="true">취합본 / Compile</div><div class="dcell" contenteditable="true">버전 / Version</div></div>
-          <div class="depth-row"><div class="dcell" contenteditable="true">관리자 / Admin</div><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-        </div>
-
         <div class="sheet-wrap">
           <table class="sheet">
             <thead>
@@ -2339,15 +2343,12 @@ function switchFlowSub(subId) {
   let flowLineTool = false;
   let flowLineDraft = null;
   let typingTimer = 0;
-  let lastDepthCell = null;
   let lastSheetCell = null;
   let lastRange = null;
   let dragSelect = null;
   let iaSheet = null;
   let iaHost = null;
-  let depthSheet = null;
-  let depthHost = null;
-  let lastIaFocus = 'depth';
+  let lastIaFocus = 'info';
   let uiLang = localStorage.getItem('pm-grid-ui-lang') || 'ko';
   let screenTool = null;
   let screenClipboard = null;
@@ -2516,7 +2517,7 @@ function switchFlowSub(subId) {
         kind: 'ia',
         depthHeaders: depthHeaders(),
         depthData: depthToAoa(),
-        depthStyles: (depthSheet && depthSheet.getStyle) ? depthSheet.getStyle() : {},
+        depthStyles: {},
         headers: tableHeaders(),
         data: tableToAoa(),
         styles: (iaSheet && iaSheet.getStyle) ? iaSheet.getStyle() : {}
@@ -2542,7 +2543,6 @@ function switchFlowSub(subId) {
     if (key === 'ia') {
       try {
         const data = JSON.parse(snap);
-        if (data.depthHeaders || data.depthData) mountDepthSpreadsheet(data.depthHeaders, data.depthData, data.depthStyles);
         mountSpreadsheet(data.headers, data.data, true, data.styles);
       } catch (error) { console.warn(error); }
     } else if (tabEl(key)) {
@@ -2600,7 +2600,7 @@ function switchFlowSub(subId) {
       ia: {
         depthHeaders: depthHeaders(),
         depthData: depthToAoa(),
-        depthStyles: (depthSheet && depthSheet.getStyle) ? depthSheet.getStyle() : {},
+        depthStyles: {},
         headers: tableHeaders(),
         data: tableToAoa(),
         styles: (iaSheet && iaSheet.getStyle) ? iaSheet.getStyle() : {}
@@ -2612,10 +2612,10 @@ function switchFlowSub(subId) {
     const cleaned = sanitizeImportedBoard(data);
     data = cleaned.data;
     if (!data || String(data.schema || '').indexOf('pm-grid') < 0) throw new Error('PM Grid JSON 백업 파일이 아닙니다.');
-    if (data.ia?.depthData || data.ia?.depthHeaders) mountDepthSpreadsheet(data.ia.depthHeaders, data.ia.depthData, data.ia.depthStyles);
-    else bootDepthSpreadsheet();
-    if (data.ia?.data) mountSpreadsheet(data.ia.headers, data.ia.data, true, data.ia.styles);
-    else if (data.ia?.table) {
+    if (data.ia?.data || (data.ia && Array.isArray(data.ia.depthData) && data.ia.depthData.length)) {
+      const merged = mergeDepthDataIntoIaRows(data.ia.data, data.ia.depthData);
+      mountSpreadsheet(data.ia.headers, merged, true, data.ia.styles);
+    } else if (data.ia?.table) {
       const wrap = document.querySelector('#tab-ia .sheet-wrap');
       if (wrap) wrap.innerHTML = data.ia.table;
       bootSpreadsheetFromTable();
@@ -2841,10 +2841,10 @@ function switchFlowSub(subId) {
       const ia = iaLockedAoa(tableHeaders(), tableToAoa());
       const depth = iaLockedDepthAoa(depthHeaders(), depthToAoa());
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([depth.headers, ...depth.data]), 'Depth');
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([ia.headers, ...ia.data]), 'IA');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([depth.headers, ...depth.data]), 'Depth');
       XLSX.writeFile(wb, `${filenameBase()}-ia.xlsx`);
-      toast(t('Depth + IA 시트를 엑셀로 저장했습니다.', 'Saved Depth + IA sheets as Excel.'));
+      toast(t('한 시트에서 IA와 Depth를 엑셀로 저장했습니다.', 'Saved IA and Depth from this one sheet as Excel.'));
     } catch (error) { toast(t('엑셀을 저장하지 못했습니다.', 'Could not save Excel.') + ' ' + error.message); }
   };
 
@@ -3381,6 +3381,48 @@ function switchFlowSub(subId) {
     };
   }
 
+  function syncIaRowsFromDepth(rows) {
+    return (rows || []).map((row) => {
+      const next = [];
+      for (let i = 0; i < 8; i += 1) next[i] = row && row[i] != null ? String(row[i]) : '';
+      let level = 0;
+      let deepest = '';
+      for (let i = 0; i < 4; i += 1) {
+        const val = String(next[i + 2] || '').trim();
+        if (val) {
+          level = i + 1;
+          deepest = val;
+        }
+      }
+      if (level) next[1] = String(level);
+      if (!String(next[6] || '').trim() && deepest) next[6] = deepest;
+      return next;
+    });
+  }
+
+  function mergeDepthDataIntoIaRows(rows, depthData) {
+    const ia = (rows || []).map((row) => {
+      const next = [];
+      for (let i = 0; i < 8; i += 1) next[i] = row && row[i] != null ? String(row[i]) : '';
+      return next;
+    });
+    const depths = Array.isArray(depthData) ? depthData : [];
+    const max = Math.max(ia.length, depths.length);
+    const out = [];
+    for (let y = 0; y < max; y += 1) {
+      const row = (ia[y] ? ia[y].slice() : []);
+      while (row.length < 8) row.push('');
+      const d = depths[y] || [];
+      for (let i = 0; i < 4; i += 1) {
+        if (!String(row[i + 2] || '').trim() && d[i] != null && String(d[i]).trim()) {
+          row[i + 2] = String(d[i]);
+        }
+      }
+      out.push(row);
+    }
+    return out;
+  }
+
   function forbiddenSampleWords() {
     return ['\uC218\uB2A5', '\uACFC\uC678', '\u004F\u0043\u0052', '\uC190\uD480\uC774'];
   }
@@ -3767,6 +3809,7 @@ function switchFlowSub(subId) {
         svg.appendChild(head);
       }
     });
+    placeFlowArrowHeaders(lane);
   }
 
   function placeFlowNodes(lane) {
@@ -3795,6 +3838,33 @@ function switchFlowSub(subId) {
     unstickStackedNodes(lane);
     migrateSequentialEdges(lane);
     drawFlowArrows(lane);
+  }
+
+  function placeFlowArrowHeaders(lane) {
+    if (!lane) return;
+    const world = ensureFlowWorld(lane);
+    const nodes = [...lane.querySelectorAll('.flow-node-box')];
+    const byId = Object.fromEntries(nodes.map((n) => [ensureNodeId(n), n]));
+    let pairs = getEdges(lane)
+      .map((e) => ({ a: byId[e.from], b: byId[e.to], eid: e.id }))
+      .filter((p) => p.a && p.b);
+    if (!pairs.length && nodes.length >= 2) {
+      for (let i = 0; i < nodes.length - 1; i += 1) {
+        pairs.push({ a: nodes[i], b: nodes[i + 1], eid: 'seq-' + i });
+      }
+    }
+    lane.querySelectorAll('.flow-arrow-next').forEach((el) => el.remove());
+    pairs.forEach((p) => {
+      const ar = arrow();
+      ar.dataset.eid = p.eid;
+      const ax = Number(p.a.dataset.fx || 0) + (p.a.offsetWidth || 72) / 2;
+      const ay = Number(p.a.dataset.fy || 0) + (p.a.offsetHeight || 28) / 2;
+      const bx = Number(p.b.dataset.fx || 0) + (p.b.offsetWidth || 72) / 2;
+      const by = Number(p.b.dataset.fy || 0) + (p.b.offsetHeight || 28) / 2;
+      ar.style.left = Math.round((ax + bx) / 2 - 11) + 'px';
+      ar.style.top = Math.round((ay + by) / 2 - 26) + 'px';
+      world.appendChild(ar);
+    });
   }
 
   function unstickStackedNodes(lane) {
@@ -4241,7 +4311,6 @@ function switchFlowSub(subId) {
 
   function enableFlowDrag() {
     document.querySelectorAll('#tab-flow .flow-step-lane, #tab-storyboard .flow-step-lane').forEach((lane) => {
-      lane.setAttribute('translate', 'no');
       placeFlowNodes(lane);
       if (lane.dataset.dragBound === '1') return;
       lane.dataset.dragBound = '1';
@@ -4363,14 +4432,7 @@ function switchFlowSub(subId) {
         event.preventDefault();
         if (flowLineTool && event.button === 0) {
           const pt = clientToWorld(lane, event.clientX, event.clientY);
-          if (flowLineDraft) {
-            if (persistOrthoLine(flowLineDraft.lane || lane, flowLineDraft.x0, flowLineDraft.y0, pt.x, pt.y)) {
-              flowLineDraft = null;
-            }
-            return;
-          }
           flowLineDraft = { lane, x0: pt.x, y0: pt.y };
-          toast(t('끝점을 클릭하거나 드래그하세요.', 'Click the other end, or drag.'));
           lane.setPointerCapture(event.pointerId);
           return;
         }
@@ -4453,9 +4515,8 @@ function switchFlowSub(subId) {
         lastFlowPointer = { x: event.clientX, y: event.clientY };
         if (flowLineDraft && flowLineDraft.lane === lane) {
           const pt = clientToWorld(lane, event.clientX, event.clientY);
-          if (persistOrthoLine(lane, flowLineDraft.x0, flowLineDraft.y0, pt.x, pt.y)) {
-            flowLineDraft = null;
-          }
+          persistOrthoLine(lane, flowLineDraft.x0, flowLineDraft.y0, pt.x, pt.y);
+          flowLineDraft = null;
           return;
         }
         if (link) {
@@ -4558,6 +4619,7 @@ function switchFlowSub(subId) {
       });
     });
   }
+
 
   function makeStoryCard() {
     const n = document.querySelectorAll('#tab-storyboard .story-card').length + 1;
@@ -5110,16 +5172,16 @@ function switchFlowSub(subId) {
   }
 
   function depthHeaders() {
-    if (depthSheet && depthSheet.options && depthSheet.options.columns) {
-      return depthSheet.options.columns.map((col, i) => col.title || `Depth ${i + 1}`);
-    }
-    const heads = [...document.querySelectorAll('#tab-ia .depth-cols span')].map((el) => el.textContent.trim());
-    return heads.length ? heads : ['1st depth', '2nd depth', '3rd depth', '4th depth'];
+    return ['1 Depth', '2 Depth', '3 Depth', '4 Depth'];
   }
 
   function depthToAoa() {
-    if (depthSheet && typeof depthSheet.getData === 'function') return depthSheet.getData();
-    return [...document.querySelectorAll('#tab-ia .depth-row')].map((row) => [...row.querySelectorAll('.dcell')].map((cell) => cell.textContent.trim()));
+    const rows = tableToAoa();
+    return (rows || []).map((row) => {
+      const next = [];
+      for (let i = 0; i < 4; i += 1) next[i] = row && row[i + 2] != null ? String(row[i + 2]) : '';
+      return next;
+    });
   }
 
   function setCoord(sheetName, x1, y1, x2, y2) {
@@ -5128,7 +5190,7 @@ function switchFlowSub(subId) {
     const addr = a === b ? a : `${a}:${b}`;
     const input = document.getElementById('ia-coord');
     const hint = document.getElementById('ia-coord-hint');
-    const region = sheetName === 'Depth' || lastIaFocus === 'depth' ? 'Depth' : 'IA';
+    const region = 'IA';
     if (input) input.value = `${region}!${addr}`;
     if (hint) {
       hint.textContent = a === b
@@ -5153,61 +5215,6 @@ function switchFlowSub(subId) {
       }
     }
     bar.innerHTML = `<span data-ko="현재 칸" data-en="Current cell">${t('현재 칸', 'Current cell')}</span><input id="ia-coord" readonly value="IA!A1" aria-label="${t('현재 칸', 'Current cell')}"><span id="ia-coord-hint">${t('IA · A열 1행', 'IA · column A row 1')}</span>`;
-  }
-
-  function mountDepthSpreadsheet(headers, data, styles) {
-    const box = document.querySelector('#tab-ia .depth-sheet');
-    if (!box || !window.jspreadsheet) return;
-    ensureCoordBar();
-    [...box.querySelectorAll('.depth-cols, .depth-row')].forEach((el) => { el.style.display = 'none'; });
-    if (!depthHost) {
-      depthHost = document.createElement('div');
-      depthHost.id = 'depth-spreadsheet';
-      box.prepend(depthHost);
-    }
-    if (depthSheet && depthHost.jspreadsheet) {
-      try { depthHost.jspreadsheet.destroy(); } catch (e) {}
-      depthHost.innerHTML = '';
-    }
-    const cols = (headers && headers.length ? headers : ['1 Depth', '2 Depth', '3 Depth', '4 Depth'])
-      .slice(0, 4)
-      .map((title, i) => ({ type: 'text', title: /depth/i.test(title) ? `${i + 1} Depth` : title, width: 100, align: 'center' }));
-    while (cols.length < 4) cols.push({ type: 'text', title: `${cols.length + 1} Depth`, width: 100, align: 'center' });
-    const rows = (data && data.length) ? data.map((row) => {
-      const next = (row || []).slice(0, 4);
-      while (next.length < 4) next.push('');
-      return next;
-    }) : Array.from({ length: 20 }, () => cols.map(() => ''));
-    depthSheet = jspreadsheet(depthHost, {
-      data: rows,
-      columns: cols,
-      defaultColAlign: 'center',
-      defaultColWidth: 100,
-      allowInsertRow: true,
-      allowManualInsertRow: true,
-      allowInsertColumn: false,
-      allowManualInsertColumn: false,
-      allowDeleteRow: true,
-      allowDeleteColumn: false,
-      columnSorting: false,
-      tableOverflow: false,
-      tableWidth: '100%',
-      tableHeight: '560px',
-      contextMenu: iaSheetContextMenu,
-      onselection: (el, x1, y1, x2, y2) => { lastIaFocus = 'depth'; setCoord('Depth', x1, y1, x2, y2); },
-      onchange: () => { if (!restoring) { pushTabHistory('ia'); saveLocal(); } }
-    });
-    if (styles && depthSheet.setStyle) {
-      try { depthSheet.setStyle(styles); } catch (e) {}
-    }
-    try { depthSheet.hideIndex(); } catch (e) {}
-    try { depthSheet.updateSelectionFromCoords(0, 0, 0, 0); } catch (e) {}
-    setCoord('Depth', 0, 0, 0, 0);
-  }
-
-  function bootDepthSpreadsheet() {
-    const parsed = { headers: depthHeaders(), data: depthToAoa() };
-    mountDepthSpreadsheet(parsed.headers, parsed.data);
   }
 
     function mountSpreadsheet(headers, data, replace, styles) {
@@ -5333,7 +5340,6 @@ function switchFlowSub(subId) {
   }
 
   function focusedIaSheet() {
-    if (lastIaFocus === 'depth') return depthSheet || document.getElementById('depth-spreadsheet')?.jspreadsheet;
     return iaSheet || document.getElementById('ia-spreadsheet')?.jspreadsheet;
   }
 
@@ -5380,7 +5386,6 @@ function switchFlowSub(subId) {
     const headers = [...table.querySelectorAll('thead tr:last-child th')].map((th) => th.textContent.trim());
     const data = [...table.querySelectorAll('tbody tr')].map((tr) => [...tr.children].map((td) => td.innerText.trim()));
     mountSpreadsheet(headers, data);
-    bootDepthSpreadsheet();
     ensureCoordBar();
   }
 
@@ -5412,34 +5417,72 @@ function switchFlowSub(subId) {
     if (iaSheet && iaSheet.deleteColumn) iaSheet.deleteColumn();
   });
   window.addDepthColumn = withHistory(() => {
-    if (sheetColCount(depthSheet) >= 4) {
-      toast(t('깊이 열은 Depth 1–4까지입니다', 'Depth columns stay at Depth 1–4'));
-      return;
-    }
-    if (depthSheet && depthSheet.insertColumn) depthSheet.insertColumn();
+    toast(t('깊이 열은 Depth 1–4까지입니다', 'Depth columns stay at Depth 1–4'));
   });
   window.removeDepthColumn = withHistory(() => {
-    if (sheetColCount(depthSheet) <= 4) {
-      toast(t('Depth 1–4 열은 잠겨 있습니다', 'Depth 1–4 columns stay locked'));
-      return;
-    }
-    if (depthSheet && depthSheet.deleteColumn) depthSheet.deleteColumn();
+    toast(t('Depth 1–4 열은 잠겨 있습니다', 'Depth 1–4 columns stay locked'));
   });
   window.shiftDepth = withHistory((direction) => {
-    const current = lastDepthCell;
-    if (!current || !current.textContent.trim()) { toast(t('이동할 Depth 셀을 먼저 클릭해 주세요.', 'Click a Depth cell first.')); return; }
-    const cells = [...current.parentElement.querySelectorAll('.dcell')];
-    const next = cells[cells.indexOf(current) + direction];
-    if (!next) return;
-    next.textContent = next.textContent.trim() ? `${next.textContent.trim()} / ${current.textContent.trim()}` : current.textContent.trim();
-    next.classList.remove('ghost');
-    next.contentEditable = 'true';
-    current.textContent = '';
-    current.classList.add('ghost');
-    lastDepthCell = next;
+    const inst = iaSheet || document.getElementById('ia-spreadsheet')?.jspreadsheet;
+    if (!inst || typeof inst.getData !== 'function') {
+      toast(t('이동할 Depth 행을 먼저 클릭해 주세요.', 'Click a Depth row first.'));
+      return;
+    }
+    const sel = inst.selectedCell;
+    if (!Array.isArray(sel) || sel.length < 2 || sel[1] == null) {
+      toast(t('이동할 Depth 행을 먼저 클릭해 주세요.', 'Click a Depth row first.'));
+      return;
+    }
+    const y = Number(sel[1]);
+    if (!Number.isFinite(y) || y < 0) {
+      toast(t('이동할 Depth 행을 먼저 클릭해 주세요.', 'Click a Depth row first.'));
+      return;
+    }
+    const row = (inst.getData()[y] || []).slice();
+    while (row.length < 8) row.push('');
+    const depths = [row[2], row[3], row[4], row[5]].map((val) => String(val || '').trim());
+    const filled = depths.map((val, i) => (val ? i : -1)).filter((i) => i >= 0);
+    if (!filled.length) {
+      toast(t('이동할 Depth 칸을 먼저 채우거나 선택해 주세요.', 'Fill or select a Depth cell first.'));
+      return;
+    }
+    let from = filled[filled.length - 1];
+    if (Array.isArray(sel)) {
+      const x = Number(sel[0]);
+      if (x >= 2 && x <= 5 && depths[x - 2]) from = x - 2;
+    }
+    const to = from + Number(direction);
+    if (to < 0 || to > 3) return;
+    const value = depths[from];
+    const dest = depths[to];
+    depths[to] = dest ? `${dest} / ${value}` : value;
+    depths[from] = '';
+    restoring = true;
+    try {
+      depths.forEach((val, i) => {
+        if (typeof inst.setValueFromCoords === 'function') inst.setValueFromCoords(i + 2, y, val);
+        else if (typeof inst.setValue === 'function') inst.setValue(colName(i + 2) + (y + 1), val);
+      });
+    } finally {
+      restoring = false;
+    }
   });
   window.syncDepthGridFromTable = withHistory(() => {
-    toast(t('오른쪽 스프레드시트는 독립 시트입니다. Depth 트리는 왼쪽에서 직접 고칩니다.', 'The right sheet is independent. Edit the Depth tree on the left.'));
+    const inst = iaSheet || document.getElementById('ia-spreadsheet')?.jspreadsheet;
+    if (!inst || typeof inst.getData !== 'function') {
+      toast(t('시트가 아직 없습니다.', 'The sheet is not ready yet.'));
+      return;
+    }
+    const synced = syncIaRowsFromDepth(inst.getData());
+    if (typeof inst.setData === 'function') inst.setData(synced);
+    else {
+      synced.forEach((row, y) => {
+        row.forEach((val, x) => {
+          if (typeof inst.setValueFromCoords === 'function') inst.setValueFromCoords(x, y, val);
+        });
+      });
+    }
+    toast(t('한 시트에서 레벨과 라벨을 Depth에 맞췄습니다.', 'Level and Label now match Depth on this one sheet.'));
   });
 
   window.PMGridCore = {
@@ -5452,6 +5495,8 @@ function switchFlowSub(subId) {
     remapLegacyIa,
     iaLockedAoa,
     iaLockedDepthAoa,
+    syncIaRowsFromDepth,
+    mergeDepthDataIntoIaRows,
     forbiddenSampleWords,
     hasForbiddenSample,
     sanitizeImportedBoard,
@@ -5478,7 +5523,7 @@ function switchFlowSub(subId) {
     bindFlowChrome();
     bindStoryChrome();
     bindScreenChrome();
-    if (!restored || !iaSheet) bootSpreadsheetFromTable();
+    if (activeTabKey() === 'ia' && (!restored || !iaSheet)) bootSpreadsheetFromTable();
     syncTabChrome(activeTabKey());
     document.getElementById('ia-cell-color')?.addEventListener('input', (event) => applyCellColor(event.target.value));
     document.getElementById('ia-cell-color')?.addEventListener('change', (event) => applyCellColor(event.target.value));
@@ -5500,15 +5545,13 @@ function switchFlowSub(subId) {
     });
     document.addEventListener('click', (event) => {
       if (!event.target.closest?.('#pm-grid-menu')) hideMenu();
-      const depth = event.target.closest?.('#tab-ia .dcell');
-      if (depth) lastDepthCell = depth;
     });
     document.addEventListener('contextmenu', (event) => {
-      const iaSheetCell = event.target.closest?.('#ia-spreadsheet td, #depth-spreadsheet td');
+      const iaSheetCell = event.target.closest?.('#ia-spreadsheet td');
       if (iaSheetCell && !iaSheetCell.classList.contains('jexcel_row') && !iaSheetCell.classList.contains('jexcel_selectall')) {
         event.preventDefault();
         event.stopPropagation();
-        const inst = iaSheetCell.closest('#depth-spreadsheet') ? depthSheet : iaSheet;
+        const inst = iaSheet;
         const y = Number(iaSheetCell.getAttribute('data-y'));
         const at = Number.isFinite(y) ? y : 0;
         showMenu(event.clientX, event.clientY, [
@@ -5602,8 +5645,7 @@ function switchFlowSub(subId) {
       const story = event.target.closest?.('#tab-storyboard .story-card');
       const shape = event.target.closest?.('#tab-screens .screen-shape');
       const screen = event.target.closest?.('#tab-screens .screen-card-unit');
-      const depthCell = event.target.closest?.('#tab-ia .dcell, #tab-ia .depth-cols span');
-      if (!story && !shape && !screen && !depthCell) return;
+      if (!story && !shape && !screen) return;
       event.preventDefault();
       if (story) {
         showMenu(event.clientX, event.clientY, [
@@ -5643,13 +5685,6 @@ function switchFlowSub(subId) {
           { label: t('이 화면 삭제', 'Delete screen'), run: withHistory(() => screen.remove()) }
         ]);
         return;
-      }
-      if (depthCell) {
-        lastDepthCell = depthCell.classList?.contains('dcell') ? depthCell : lastDepthCell;
-        showMenu(event.clientX, event.clientY, [
-          { label: t('오른쪽에 Depth 칸 추가', 'Add Depth column'), run: () => window.addDepthColumn() },
-          { label: t('이 Depth 칸 삭제', 'Delete Depth column'), run: () => window.removeDepthColumn() }
-        ]);
       }
     }, true);
 
