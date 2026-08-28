@@ -21,12 +21,13 @@ const src = [
   extractFn('remapLegacyIa'),
   extractFn('iaLockedAoa'),
   extractFn('iaLockedDepthAoa'),
+  extractFn('syncIaRowsFromDepth'),
   extractFn('forbiddenSampleWords'),
   extractFn('hasForbiddenSample'),
   extractFn('sanitizeHtmlBlob'),
   extractFn('sanitizeImportedBoard')
 ].join('\n');
-const fn = new Function('window', src + '; return { snapOrtho, orthoElbowPath, clampCornerRadius, iaCanonicalHeaders, remapLegacyIa, iaLockedAoa, iaLockedDepthAoa, forbiddenSampleWords, hasForbiddenSample, sanitizeImportedBoard };');
+const fn = new Function('window', src + '; return { snapOrtho, orthoElbowPath, clampCornerRadius, iaCanonicalHeaders, remapLegacyIa, iaLockedAoa, iaLockedDepthAoa, syncIaRowsFromDepth, forbiddenSampleWords, hasForbiddenSample, sanitizeImportedBoard };');
 const core = fn(sandbox);
 
 test('snapOrtho keeps a horizontal rail', () => {
@@ -82,7 +83,9 @@ test('IA headers stay bilingual and keep 4 Depth columns', () => {
   assert.match(html, /화면 구분 \/ Screen type/);
   assert.match(html, /<th contenteditable="true">4 Depth<\/th>/);
   assert.match(html, /#ia-spreadsheet table\.jexcel > tbody > tr > td:nth-child\(7\)/);
-  assert.match(html, /grid-template-columns: minmax\(420px, 34%\) minmax\(700px, 1fr\)/);
+  assert.match(html, /#tab-ia \.depth-sheet \{ display: none !important; \}/);
+  assert.match(html, /#tab-ia \.ia-excel-layout \{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.equal(html.includes('grid-template-columns: minmax(420px, 34%) minmax(700px, 1fr)'), false);
   assert.match(html, /버전 \/ Version/);
   assert.match(html, /홈 \/ Home<\/td><td contenteditable="true">아레나 \/ Arena<\/td><td contenteditable="true">취합본 \/ Compile<\/td><td contenteditable="true">버전 \/ Version/);
   assert.equal(html.includes('와이어 / Wire'), false);
@@ -103,6 +106,20 @@ test('iaLockedAoa always writes the 8 IA columns', () => {
   const depth = core.iaLockedDepthAoa(['1 Depth', '2 Depth', '3 Depth', '4 Depth', '5 Depth'], [['홈', '아레나', '취합본', '버전', '잘림']]);
   assert.deepEqual(depth.headers, ['1 Depth', '2 Depth', '3 Depth', '4 Depth']);
   assert.deepEqual(depth.data[0], ['홈', '아레나', '취합본', '버전']);
+});
+
+test('syncIaRowsFromDepth writes Level and empty Label from the same 8-col sheet', () => {
+  const synced = core.syncIaRowsFromDepth([
+    ['웹 / Web', '', '홈 / Home', '아레나 / Arena', '취합본 / Compile', '버전 / Version', '', '탭'],
+    ['웹 / Web', '9', '홈 / Home', '', '', '', '홈 / Home', ''],
+    ['웹 / Web', '2', '', '', '', '', '', '']
+  ]);
+  assert.deepEqual(synced[0], ['웹 / Web', '4', '홈 / Home', '아레나 / Arena', '취합본 / Compile', '버전 / Version', '버전 / Version', '탭']);
+  assert.deepEqual(synced[1], ['웹 / Web', '1', '홈 / Home', '', '', '', '홈 / Home', '']);
+  assert.deepEqual(synced[2], ['웹 / Web', '2', '', '', '', '', '', '']);
+  assert.match(html, /한 시트에서 레벨과 라벨을 Depth에 맞췄습니다/);
+  assert.equal(html.includes('오른쪽 스프레드시트는 독립 시트입니다'), false);
+  assert.equal(html.includes('왼쪽 Depth와 오른쪽 시트'), false);
 });
 
 test('flow box CSS does not treat every node as an invisible anchor', () => {
