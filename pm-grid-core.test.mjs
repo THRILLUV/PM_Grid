@@ -154,6 +154,35 @@ test('F draws ➔ headers and keeps Alt connect plus Shift marquee bindings', ()
   assert.equal(html.includes('#tab-flow .flow-arrow-next,\n#tab-storyboard .flow-arrow-next { display: none; }'), false);
 });
 
+test('empty F [] edges still migrate and Option connect persists a line plus ➔', () => {
+  const migrate = extractFn('migrateSequentialEdges');
+  assert.equal(migrate.includes('if (lane.dataset.edges) return;'), false);
+  assert.match(migrate, /getEdges\(lane\)\.length/);
+  assert.match(html, /toNode = toNode \|\| lane\.querySelector\('\.flow-node-box\.link-hot'\)/);
+  assert.match(html, /placeFlowArrowHeaders\(lane\)/);
+  const draw = extractFn('drawFlowArrows');
+  assert.match(draw, /placeFlowArrowHeaders\(lane\)/);
+  const flowSrc = [
+    extractFn('uid'),
+    extractFn('ensureNodeId'),
+    extractFn('getEdges'),
+    extractFn('setEdges'),
+    extractFn('migrateSequentialEdges')
+  ].join('\n');
+  const flow = new Function(flowSrc + '; return { getEdges, setEdges, migrateSequentialEdges };')();
+  const lane = {
+    dataset: { edges: '[]' },
+    querySelectorAll: () => [
+      { dataset: { nid: 'n1' } },
+      { dataset: { nid: 'n2' } }
+    ]
+  };
+  flow.migrateSequentialEdges(lane);
+  assert.equal(flow.getEdges(lane).length, 1);
+  assert.equal(flow.getEdges(lane)[0].from, 'n1');
+  assert.equal(flow.getEdges(lane)[0].to, 'n2');
+});
+
 test('flow box CSS does not treat every node as an invisible anchor', () => {
   assert.equal(html.includes('#tab-flow .flow-node-box, #tab-storyboard .flow-node-box[data-shape="anchor"]'), false);
   assert.match(html, /#tab-flow \.flow-node-box\[data-shape="anchor"\],\n#tab-storyboard \.flow-node-box\[data-shape="anchor"\]/);

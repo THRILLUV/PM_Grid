@@ -3193,7 +3193,7 @@ function switchFlowSub(subId) {
   }
 
   function migrateSequentialEdges(lane) {
-    if (lane.dataset.edges) return;
+    if (getEdges(lane).length) return;
     const nodes = [...lane.querySelectorAll('.flow-node-box')];
     const edges = [];
     for (let i = 0; i < nodes.length - 1; i += 1) {
@@ -3836,7 +3836,6 @@ function switchFlowSub(subId) {
       node.style.top = node.dataset.fy + 'px';
     });
     unstickStackedNodes(lane);
-    placeFlowArrowHeaders(lane);
     migrateSequentialEdges(lane);
     drawFlowArrows(lane);
   }
@@ -4330,6 +4329,10 @@ function switchFlowSub(subId) {
       };
       const drawTemp = (x, y) => {
         let svg = lane.querySelector('svg.flow-arrows');
+        if (!svg) {
+          drawFlowArrows(lane);
+          svg = lane.querySelector('svg.flow-arrows');
+        }
         if (!svg) return;
         svg.querySelectorAll('.flow-temp').forEach((el) => el.remove());
         lane.querySelectorAll('.flow-node-box.link-hot').forEach((n) => n.classList.remove('link-hot'));
@@ -4536,7 +4539,8 @@ function switchFlowSub(subId) {
           let toPort = link.toPort;
           if (link.smart) {
             toNode = document.elementsFromPoint(event.clientX, event.clientY).map((el) => el.closest && el.closest('.flow-node-box')).find((n) => n && n !== link.fromNode && lane.contains(n));
-            if (toNode) {
+            toNode = toNode || lane.querySelector('.flow-node-box.link-hot');
+            if (toNode && toNode !== link.fromNode) {
               const ports = guessConnectPorts(link.fromNode, toNode);
               link.fromPort = ports.from;
               toPort = ports.to;
