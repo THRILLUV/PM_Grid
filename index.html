@@ -1767,7 +1767,17 @@ body.ia-first-screen #ia-coord { width: 110px; padding: 4px 6px; }
 #tab-flow .fn-guide,
 #tab-storyboard .fn-guide { display: none !important; }
 #tab-flow .flow-arrow-next,
-#tab-storyboard .flow-arrow-next { display: none; }
+#tab-storyboard .flow-arrow-next {
+  display: block;
+  position: absolute;
+  transform: none;
+  z-index: 3;
+  pointer-events: none;
+  color: #94a3b8;
+  font-size: 18px;
+  line-height: 1;
+  margin: 0;
+}
 #tab-flow .flow-arrows,
 #tab-storyboard .flow-arrows {
   position: absolute;
@@ -3758,17 +3768,18 @@ function switchFlowSub(subId) {
       if (e.dash) line.setAttribute('stroke-dasharray', '10 8');
       svg.appendChild(hit);
       svg.appendChild(line);
-      if (!e.ortho) {
-        const tip = portAnchor(byId[e.to], toPort, null, 4);
-        const inward = portDir(toPort).map((v) => -v);
+      const segs = edgeSegments(e, byId[e.from], byId[e.to]);
+      const last = segs[segs.length - 1];
+      if (last && Math.hypot(last.x2 - last.x1, last.y2 - last.y1) > 4) {
         const head = document.createElementNS(NS, 'polygon');
         head.setAttribute('class', 'flow-link');
         head.setAttribute('data-eid', e.id);
-        head.setAttribute('points', arrowPoly(tip, inward, 12));
-        head.setAttribute('fill', '#2563eb');
+        head.setAttribute('points', arrowPoly({ x: last.x2, y: last.y2 }, [last.x2 - last.x1, last.y2 - last.y1], 12));
+        head.setAttribute('fill', e.ortho ? '#38bdf8' : '#2563eb');
         svg.appendChild(head);
       }
     });
+    placeFlowArrowHeaders(lane);
   }
 
   function placeFlowNodes(lane) {
@@ -3795,8 +3806,28 @@ function switchFlowSub(subId) {
       node.style.top = node.dataset.fy + 'px';
     });
     unstickStackedNodes(lane);
+    placeFlowArrowHeaders(lane);
     migrateSequentialEdges(lane);
     drawFlowArrows(lane);
+  }
+
+  function placeFlowArrowHeaders(lane) {
+    const nodes = [...lane.querySelectorAll('.flow-node-box')];
+    const arrows = [...lane.querySelectorAll('.flow-arrow-next')];
+    arrows.forEach((ar, i) => {
+      const a = nodes[i];
+      const b = nodes[i + 1];
+      if (!a || !b) {
+        ar.style.visibility = 'hidden';
+        return;
+      }
+      const left = Number(a.dataset.fx || 0) + (a.offsetWidth || 0);
+      const right = Number(b.dataset.fx || 0);
+      const midY = (Number(a.dataset.fy || 0) + Number(b.dataset.fy || 0)) / 2 + (a.offsetHeight || 28) / 2 - 10;
+      ar.style.visibility = 'visible';
+      ar.style.left = Math.round((left + right) / 2 - 9) + 'px';
+      ar.style.top = Math.round(midY) + 'px';
+    });
   }
 
   function unstickStackedNodes(lane) {
@@ -4317,6 +4348,14 @@ function switchFlowSub(subId) {
         lastFlowPointer = { x: event.clientX, y: event.clientY };
         if (event.button !== 0 && event.button !== 1) return;
         const port = event.target.closest('.flow-port');
+        const nodeEarly = event.target.closest('.flow-node-box');
+        if (nodeEarly && event.button === 0 && event.altKey) {
+          event.preventDefault();
+          event.stopPropagation();
+          link = { fromNode: nodeEarly, smart: true, fromPort: port?.dataset.port || 'r', toPort: 'l' };
+          lane.setPointerCapture(event.pointerId);
+          return;
+        }
         if (port && event.button === 0 && !event.metaKey && !event.ctrlKey) {
           const node = port.closest('.flow-node-box');
           if (!node) return;
@@ -4326,17 +4365,10 @@ function switchFlowSub(subId) {
           lane.setPointerCapture(event.pointerId);
           return;
         }
-        if (event.target.closest('[contenteditable="true"]')) return;
+        if (event.target.closest('[contenteditable="true"]') && !event.shiftKey) return;
         const node = event.target.closest('.flow-node-box');
         const cmd = event.metaKey || event.ctrlKey;
         if (node && event.button === 0) {
-          if (event.altKey) {
-            event.preventDefault();
-            event.stopPropagation();
-            link = { fromNode: node, smart: true, fromPort: 'r', toPort: 'l' };
-            lane.setPointerCapture(event.pointerId);
-            return;
-          }
           if (cmd) {
             node.classList.toggle('selected');
             event.preventDefault();
@@ -4450,6 +4482,7 @@ function switchFlowSub(subId) {
           item.el.dataset.fy = String(y);
         });
         drawFlowArrows(lane);
+        placeFlowArrowHeaders(lane);
       });
       lane.addEventListener('pointerup', (event) => {
         lastFlowPointer = { x: event.clientX, y: event.clientY };
