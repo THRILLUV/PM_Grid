@@ -22,12 +22,13 @@ const src = [
   extractFn('iaLockedAoa'),
   extractFn('iaLockedDepthAoa'),
   extractFn('syncIaRowsFromDepth'),
+  extractFn('mergeDepthDataIntoIaRows'),
   extractFn('forbiddenSampleWords'),
   extractFn('hasForbiddenSample'),
   extractFn('sanitizeHtmlBlob'),
   extractFn('sanitizeImportedBoard')
 ].join('\n');
-const fn = new Function('window', src + '; return { snapOrtho, orthoElbowPath, clampCornerRadius, iaCanonicalHeaders, remapLegacyIa, iaLockedAoa, iaLockedDepthAoa, syncIaRowsFromDepth, forbiddenSampleWords, hasForbiddenSample, sanitizeImportedBoard };');
+const fn = new Function('window', src + '; return { snapOrtho, orthoElbowPath, clampCornerRadius, iaCanonicalHeaders, remapLegacyIa, iaLockedAoa, iaLockedDepthAoa, syncIaRowsFromDepth, mergeDepthDataIntoIaRows, forbiddenSampleWords, hasForbiddenSample, sanitizeImportedBoard };');
 const core = fn(sandbox);
 
 test('snapOrtho keeps a horizontal rail', () => {
@@ -123,6 +124,23 @@ test('syncIaRowsFromDepth writes Level and empty Label from the same 8-col sheet
   assert.match(html, /한 시트에서 레벨과 라벨을 Depth에 맞췄습니다/);
   assert.equal(html.includes('오른쪽 스프레드시트는 독립 시트입니다'), false);
   assert.equal(html.includes('왼쪽 Depth와 오른쪽 시트'), false);
+});
+
+test('mergeDepthDataIntoIaRows fills empty Depth cells and extra rows without clobbering paths', () => {
+  const merged = core.mergeDepthDataIntoIaRows(
+    [
+      ['웹 / Web', '1', '홈 / Home', '', '', '', '홈 / Home', ''],
+      ['웹 / Web', '2', '홈 / Home', '아레나 / Arena', '', '', '아레나 / Arena', '']
+    ],
+    [
+      ['홈 / Home', '', '', ''],
+      ['', '다른값', '', ''],
+      ['', '', '취합본 / Compile', '버전 / Version']
+    ]
+  );
+  assert.deepEqual(merged[0], ['웹 / Web', '1', '홈 / Home', '', '', '', '홈 / Home', '']);
+  assert.deepEqual(merged[1], ['웹 / Web', '2', '홈 / Home', '아레나 / Arena', '', '', '아레나 / Arena', '']);
+  assert.deepEqual(merged[2], ['', '', '', '', '취합본 / Compile', '버전 / Version', '', '']);
 });
 
 test('flow box CSS does not treat every node as an invisible anchor', () => {

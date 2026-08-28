@@ -2607,8 +2607,10 @@ function switchFlowSub(subId) {
     const cleaned = sanitizeImportedBoard(data);
     data = cleaned.data;
     if (!data || String(data.schema || '').indexOf('pm-grid') < 0) throw new Error('PM Grid JSON 백업 파일이 아닙니다.');
-    if (data.ia?.data) mountSpreadsheet(data.ia.headers, data.ia.data, true, data.ia.styles);
-    else if (data.ia?.table) {
+    if (data.ia?.data || (data.ia && Array.isArray(data.ia.depthData) && data.ia.depthData.length)) {
+      const merged = mergeDepthDataIntoIaRows(data.ia.data, data.ia.depthData);
+      mountSpreadsheet(data.ia.headers, merged, true, data.ia.styles);
+    } else if (data.ia?.table) {
       const wrap = document.querySelector('#tab-ia .sheet-wrap');
       if (wrap) wrap.innerHTML = data.ia.table;
       bootSpreadsheetFromTable();
@@ -3391,6 +3393,29 @@ function switchFlowSub(subId) {
       if (!String(next[6] || '').trim() && deepest) next[6] = deepest;
       return next;
     });
+  }
+
+  function mergeDepthDataIntoIaRows(rows, depthData) {
+    const ia = (rows || []).map((row) => {
+      const next = [];
+      for (let i = 0; i < 8; i += 1) next[i] = row && row[i] != null ? String(row[i]) : '';
+      return next;
+    });
+    const depths = Array.isArray(depthData) ? depthData : [];
+    const max = Math.max(ia.length, depths.length);
+    const out = [];
+    for (let y = 0; y < max; y += 1) {
+      const row = (ia[y] ? ia[y].slice() : []);
+      while (row.length < 8) row.push('');
+      const d = depths[y] || [];
+      for (let i = 0; i < 4; i += 1) {
+        if (!String(row[i + 2] || '').trim() && d[i] != null && String(d[i]).trim()) {
+          row[i + 2] = String(d[i]);
+        }
+      }
+      out.push(row);
+    }
+    return out;
   }
 
   function forbiddenSampleWords() {
@@ -5469,6 +5494,7 @@ function switchFlowSub(subId) {
     iaLockedAoa,
     iaLockedDepthAoa,
     syncIaRowsFromDepth,
+    mergeDepthDataIntoIaRows,
     forbiddenSampleWords,
     hasForbiddenSample,
     sanitizeImportedBoard,
