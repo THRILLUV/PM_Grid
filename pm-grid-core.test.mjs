@@ -147,8 +147,8 @@ test('F draws ➔ headers and keeps Alt connect plus Shift marquee bindings', ()
   assert.match(html, /function placeFlowArrowHeaders/);
   assert.match(html, /world\.appendChild\(ar\)/);
   assert.match(html, /lane\.querySelectorAll\('\.flow-arrow-next'\)\.forEach\(\(el\) => el\.remove\(\)\)/);
-  assert.match(html, /event\.button === 0 && event\.altKey && node/);
-  assert.match(html, /event\.button === 0 && event\.shiftKey/);
+  assert.match(html, /event\.button === 0 && altOn && node/);
+  assert.match(html, /event\.button === 0 && shiftOn/);
   assert.match(html, /el\.className = 'flow-marquee'/);
   assert.equal(html.includes("if (event.target.closest('[contenteditable=\"true\"]')) return;"), false);
   assert.equal(html.includes('#tab-flow .flow-arrow-next,\n#tab-storyboard .flow-arrow-next { display: none; }'), false);
@@ -158,9 +158,13 @@ test('empty F [] edges still migrate and Option connect persists a line plus ➔
   const migrate = extractFn('migrateSequentialEdges');
   assert.equal(migrate.includes('if (lane.dataset.edges) return;'), false);
   assert.match(html, /document\.addEventListener\('pointerup'/);
+  assert.match(html, /addEventListener\('mousedown'/);
+  assert.match(html, /addEventListener\('mouseup'/);
   assert.match(html, /others\.length === 1/);
   assert.match(html, /el\.className = 'flow-marquee'/);
-  assert.match(html, /event\.button === 0 && event\.shiftKey/);
+  assert.match(html, /event\.shiftKey \|\| flowShiftHeld/);
+  assert.equal(html.includes('if (!restored || !iaSheet) bootSpreadsheetFromTable();'), false);
+  assert.match(html, /if \(tabId === 'ia' && !iaSheet\) bootSpreadsheetFromTable/);
   const draw = extractFn('drawFlowArrows');
   assert.match(draw, /placeFlowArrowHeaders\(lane\)/);
   const flowSrc = [

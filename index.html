@@ -3157,7 +3157,24 @@ function switchFlowSub(subId) {
     }
   }
 
+  let flowAltHeld = false;
+  let flowShiftHeld = false;
+  function bindFlowModifierKeys() {
+    if (window.__pmGridFlowMods) return;
+    window.__pmGridFlowMods = true;
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Alt' || event.code === 'AltLeft' || event.code === 'AltRight' || event.altKey) flowAltHeld = true;
+      if (event.key === 'Shift' || event.code === 'ShiftLeft' || event.code === 'ShiftRight' || event.shiftKey) flowShiftHeld = true;
+    }, true);
+    document.addEventListener('keyup', (event) => {
+      if (event.key === 'Alt' || event.code === 'AltLeft' || event.code === 'AltRight') flowAltHeld = false;
+      if (event.key === 'Shift' || event.code === 'ShiftLeft' || event.code === 'ShiftRight') flowShiftHeld = false;
+    }, true);
+    window.addEventListener('blur', () => { flowAltHeld = false; flowShiftHeld = false; });
+  }
+
   function bindFlowChrome() {
+    bindFlowModifierKeys();
     bindFlowWheelZoom();
     enableFlowDrag();
     bindFlowLineToolKeys();
@@ -4445,7 +4462,14 @@ function switchFlowSub(subId) {
           node.classList.toggle('selected', hit);
         });
       };
-      lane.addEventListener('pointerdown', (event) => {
+      let ignoreMouse = 0;
+      const markPointer = (event) => {
+        if (event && String(event.type || '').indexOf('pointer') === 0) ignoreMouse = Date.now();
+      };
+      const isDupMouse = (event) => String(event.type || '').indexOf('mouse') === 0 && (Date.now() - ignoreMouse) < 80;
+      const onDown = (event) => {
+        if (isDupMouse(event)) return;
+        markPointer(event);
         lastFlowPointer = { x: event.clientX, y: event.clientY };
         if (event.button !== 0 && event.button !== 1) return;
         const target = flowEventEl(event);
@@ -4453,14 +4477,16 @@ function switchFlowSub(subId) {
         if (target.closest('.flow-zoom-bar')) return;
         const port = target.closest('.flow-port');
         const node = target.closest('.flow-node-box');
-        if (event.button === 0 && event.altKey && node && lane.contains(node)) {
+        const altOn = event.altKey || flowAltHeld;
+        const shiftOn = event.shiftKey || flowShiftHeld;
+        if (event.button === 0 && altOn && node && lane.contains(node)) {
           event.preventDefault();
           event.stopPropagation();
           link = { fromNode: node, smart: true, fromPort: port && port.dataset.port ? port.dataset.port : 'r', toPort: 'l', cx: event.clientX, cy: event.clientY, dragged: false };
           capturePtr(lane, event.pointerId);
           return;
         }
-        if (event.button === 0 && event.shiftKey) {
+        if (event.button === 0 && shiftOn) {
           event.preventDefault();
           event.stopPropagation();
           const lr = lane.getBoundingClientRect();
@@ -4530,10 +4556,12 @@ function switchFlowSub(subId) {
         };
         lane.classList.add('panning');
         capturePtr(lane, event.pointerId);
-      }, true);
+      };
       const onMove = (event) => {
+        if (isDupMouse(event)) return;
+        markPointer(event);
         lastFlowPointer = { x: event.clientX, y: event.clientY };
-        if (drag && event.altKey && drag.isolate && !link && !marquee) {
+        if (drag && (event.altKey || flowAltHeld) && drag.isolate && !link && !marquee) {
           link = { fromNode: drag.isolate, smart: true, fromPort: 'r', toPort: 'l', cx: drag.cx, cy: drag.cy, dragged: true };
           drag.nodes.forEach((item) => item.el.classList.remove('dragging'));
           drag = null;
@@ -4594,6 +4622,8 @@ function switchFlowSub(subId) {
         placeFlowArrowHeaders(lane);
       };
       const onUp = (event) => {
+        if (isDupMouse(event)) return;
+        markPointer(event);
         lastFlowPointer = { x: event.clientX, y: event.clientY };
         if (flowLineDraft && flowLineDraft.lane === lane) {
           const pt = clientToWorld(lane, event.clientX, event.clientY);
@@ -4659,11 +4689,17 @@ function switchFlowSub(subId) {
           saveLocal();
         }
       };
+      lane.addEventListener('pointerdown', onDown, true);
+      lane.addEventListener('mousedown', onDown, true);
       lane.addEventListener('pointermove', onMove, true);
+      lane.addEventListener('mousemove', onMove, true);
       lane.addEventListener('pointerup', onUp, true);
+      lane.addEventListener('mouseup', onUp, true);
       lane.addEventListener('pointercancel', onUp, true);
       document.addEventListener('pointermove', onMove, true);
+      document.addEventListener('mousemove', onMove, true);
       document.addEventListener('pointerup', onUp, true);
+      document.addEventListener('mouseup', onUp, true);
       document.addEventListener('pointercancel', onUp, true);
       lane.addEventListener('wheel', (event) => {
         event.preventDefault();
@@ -5586,6 +5622,7 @@ function switchFlowSub(subId) {
     placeStoryBubblesOutsideFace,
     selectScreenCard
   };
+  window.enableFlowDrag = enableFlowDrag;
 
   const _origSwitch = window.switchMasterTab;
   window.switchMasterTab = function(tabId, btn) {
@@ -5605,7 +5642,7 @@ function switchFlowSub(subId) {
     bindFlowChrome();
     bindStoryChrome();
     bindScreenChrome();
-    if (!restored || !iaSheet) bootSpreadsheetFromTable();
+    if (activeTabKey() === 'ia' && (!restored || !iaSheet)) bootSpreadsheetFromTable();
     syncTabChrome(activeTabKey());
     document.getElementById('ia-cell-color')?.addEventListener('input', (event) => applyCellColor(event.target.value));
     document.getElementById('ia-cell-color')?.addEventListener('change', (event) => applyCellColor(event.target.value));
