@@ -83,9 +83,12 @@ test('IA headers stay bilingual and keep 4 Depth columns', () => {
   assert.match(html, /화면 구분 \/ Screen type/);
   assert.match(html, /<th contenteditable="true">4 Depth<\/th>/);
   assert.match(html, /#ia-spreadsheet table\.jexcel > tbody > tr > td:nth-child\(7\)/);
-  assert.match(html, /#tab-ia \.depth-sheet \{ display: none !important; \}/);
+  assert.equal(html.includes('class="depth-sheet"'), false);
+  assert.equal(html.includes('function mountDepthSpreadsheet'), false);
   assert.match(html, /#tab-ia \.ia-excel-layout \{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.equal(html.includes('grid-template-columns: minmax(420px, 34%) minmax(700px, 1fr)'), false);
+  assert.equal(html.includes('grid-template-columns: 340px minmax(0, 1fr)'), false);
+  assert.equal(html.includes('grid-template-columns: 360px minmax(0, 1fr)'), false);
   assert.match(html, /버전 \/ Version/);
   assert.match(html, /홈 \/ Home<\/td><td contenteditable="true">아레나 \/ Arena<\/td><td contenteditable="true">취합본 \/ Compile<\/td><td contenteditable="true">버전 \/ Version/);
   assert.equal(html.includes('와이어 / Wire'), false);

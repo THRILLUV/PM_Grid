@@ -650,7 +650,7 @@ body {
 }
 .ia-excel-layout {
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -922,7 +922,7 @@ body {
   z-index: 4;
 }
 .ia-excel-layout {
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 /* Export Toolbar */
@@ -2210,22 +2210,6 @@ body.ia-first-screen #ia-coord { width: 110px; padding: 4px 6px; }
       </div>
 
       <div class="ia-excel-layout">
-        <div class="depth-sheet">
-          <div class="depth-cols">
-            <span contenteditable="true">1 Depth</span>
-            <span contenteditable="true">2 Depth</span>
-            <span contenteditable="true">3 Depth</span>
-            <span contenteditable="true">4 Depth</span>
-          </div>
-          <div class="depth-row"><div class="dcell" contenteditable="true">홈 / Home</div><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">아레나 / Arena</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">취합본 / Compile</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">화면 / Screen</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell" contenteditable="true">버전 / Version</div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-          <div class="depth-row"><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell" contenteditable="true">취합본 / Compile</div><div class="dcell" contenteditable="true">버전 / Version</div></div>
-          <div class="depth-row"><div class="dcell" contenteditable="true">관리자 / Admin</div><div class="dcell ghost"></div><div class="dcell ghost"></div><div class="dcell ghost"></div></div>
-        </div>
-
         <div class="sheet-wrap">
           <table class="sheet">
             <thead>
@@ -2344,14 +2328,11 @@ function switchFlowSub(subId) {
   let flowLineTool = false;
   let flowLineDraft = null;
   let typingTimer = 0;
-  let lastDepthCell = null;
   let lastSheetCell = null;
   let lastRange = null;
   let dragSelect = null;
   let iaSheet = null;
   let iaHost = null;
-  let depthSheet = null;
-  let depthHost = null;
   let lastIaFocus = 'info';
   let uiLang = localStorage.getItem('pm-grid-ui-lang') || 'ko';
   let screenTool = null;
@@ -2521,7 +2502,7 @@ function switchFlowSub(subId) {
         kind: 'ia',
         depthHeaders: depthHeaders(),
         depthData: depthToAoa(),
-        depthStyles: (depthSheet && depthSheet.getStyle) ? depthSheet.getStyle() : {},
+        depthStyles: {},
         headers: tableHeaders(),
         data: tableToAoa(),
         styles: (iaSheet && iaSheet.getStyle) ? iaSheet.getStyle() : {}
@@ -2604,7 +2585,7 @@ function switchFlowSub(subId) {
       ia: {
         depthHeaders: depthHeaders(),
         depthData: depthToAoa(),
-        depthStyles: (depthSheet && depthSheet.getStyle) ? depthSheet.getStyle() : {},
+        depthStyles: {},
         headers: tableHeaders(),
         data: tableToAoa(),
         styles: (iaSheet && iaSheet.getStyle) ? iaSheet.getStyle() : {}
@@ -5136,14 +5117,11 @@ function switchFlowSub(subId) {
 
   function depthToAoa() {
     const rows = tableToAoa();
-    if (rows && rows.length) {
-      return rows.map((row) => {
-        const next = [];
-        for (let i = 0; i < 4; i += 1) next[i] = row && row[i + 2] != null ? String(row[i + 2]) : '';
-        return next;
-      });
-    }
-    return [...document.querySelectorAll('#tab-ia .depth-row')].map((row) => [...row.querySelectorAll('.dcell')].map((cell) => cell.textContent.trim()));
+    return (rows || []).map((row) => {
+      const next = [];
+      for (let i = 0; i < 4; i += 1) next[i] = row && row[i + 2] != null ? String(row[i + 2]) : '';
+      return next;
+    });
   }
 
   function setCoord(sheetName, x1, y1, x2, y2) {
@@ -5177,61 +5155,6 @@ function switchFlowSub(subId) {
       }
     }
     bar.innerHTML = `<span data-ko="현재 칸" data-en="Current cell">${t('현재 칸', 'Current cell')}</span><input id="ia-coord" readonly value="IA!A1" aria-label="${t('현재 칸', 'Current cell')}"><span id="ia-coord-hint">${t('IA · A열 1행', 'IA · column A row 1')}</span>`;
-  }
-
-  function mountDepthSpreadsheet(headers, data, styles) {
-    const box = document.querySelector('#tab-ia .depth-sheet');
-    if (!box || !window.jspreadsheet) return;
-    ensureCoordBar();
-    [...box.querySelectorAll('.depth-cols, .depth-row')].forEach((el) => { el.style.display = 'none'; });
-    if (!depthHost) {
-      depthHost = document.createElement('div');
-      depthHost.id = 'depth-spreadsheet';
-      box.prepend(depthHost);
-    }
-    if (depthSheet && depthHost.jspreadsheet) {
-      try { depthHost.jspreadsheet.destroy(); } catch (e) {}
-      depthHost.innerHTML = '';
-    }
-    const cols = (headers && headers.length ? headers : ['1 Depth', '2 Depth', '3 Depth', '4 Depth'])
-      .slice(0, 4)
-      .map((title, i) => ({ type: 'text', title: /depth/i.test(title) ? `${i + 1} Depth` : title, width: 100, align: 'center' }));
-    while (cols.length < 4) cols.push({ type: 'text', title: `${cols.length + 1} Depth`, width: 100, align: 'center' });
-    const rows = (data && data.length) ? data.map((row) => {
-      const next = (row || []).slice(0, 4);
-      while (next.length < 4) next.push('');
-      return next;
-    }) : Array.from({ length: 20 }, () => cols.map(() => ''));
-    depthSheet = jspreadsheet(depthHost, {
-      data: rows,
-      columns: cols,
-      defaultColAlign: 'center',
-      defaultColWidth: 100,
-      allowInsertRow: true,
-      allowManualInsertRow: true,
-      allowInsertColumn: false,
-      allowManualInsertColumn: false,
-      allowDeleteRow: true,
-      allowDeleteColumn: false,
-      columnSorting: false,
-      tableOverflow: false,
-      tableWidth: '100%',
-      tableHeight: '560px',
-      contextMenu: iaSheetContextMenu,
-      onselection: (el, x1, y1, x2, y2) => { lastIaFocus = 'depth'; setCoord('Depth', x1, y1, x2, y2); },
-      onchange: () => { if (!restoring) { pushTabHistory('ia'); saveLocal(); } }
-    });
-    if (styles && depthSheet.setStyle) {
-      try { depthSheet.setStyle(styles); } catch (e) {}
-    }
-    try { depthSheet.hideIndex(); } catch (e) {}
-    try { depthSheet.updateSelectionFromCoords(0, 0, 0, 0); } catch (e) {}
-    setCoord('Depth', 0, 0, 0, 0);
-  }
-
-  function bootDepthSpreadsheet() {
-    const parsed = { headers: depthHeaders(), data: depthToAoa() };
-    mountDepthSpreadsheet(parsed.headers, parsed.data);
   }
 
     function mountSpreadsheet(headers, data, replace, styles) {
@@ -5446,7 +5369,15 @@ function switchFlowSub(subId) {
       return;
     }
     const sel = inst.selectedCell;
-    const y = Array.isArray(sel) && sel.length >= 2 && sel[1] != null ? Number(sel[1]) : 0;
+    if (!Array.isArray(sel) || sel.length < 2 || sel[1] == null) {
+      toast(t('이동할 Depth 행을 먼저 클릭해 주세요.', 'Click a Depth row first.'));
+      return;
+    }
+    const y = Number(sel[1]);
+    if (!Number.isFinite(y) || y < 0) {
+      toast(t('이동할 Depth 행을 먼저 클릭해 주세요.', 'Click a Depth row first.'));
+      return;
+    }
     const row = (inst.getData()[y] || []).slice();
     while (row.length < 8) row.push('');
     const depths = [row[2], row[3], row[4], row[5]].map((val) => String(val || '').trim());
@@ -5466,10 +5397,15 @@ function switchFlowSub(subId) {
     const dest = depths[to];
     depths[to] = dest ? `${dest} / ${value}` : value;
     depths[from] = '';
-    depths.forEach((val, i) => {
-      if (typeof inst.setValueFromCoords === 'function') inst.setValueFromCoords(i + 2, y, val);
-      else if (typeof inst.setValue === 'function') inst.setValue(colName(i + 2) + (y + 1), val);
-    });
+    restoring = true;
+    try {
+      depths.forEach((val, i) => {
+        if (typeof inst.setValueFromCoords === 'function') inst.setValueFromCoords(i + 2, y, val);
+        else if (typeof inst.setValue === 'function') inst.setValue(colName(i + 2) + (y + 1), val);
+      });
+    } finally {
+      restoring = false;
+    }
   });
   window.syncDepthGridFromTable = withHistory(() => {
     const inst = iaSheet || document.getElementById('ia-spreadsheet')?.jspreadsheet;
@@ -5548,15 +5484,13 @@ function switchFlowSub(subId) {
     });
     document.addEventListener('click', (event) => {
       if (!event.target.closest?.('#pm-grid-menu')) hideMenu();
-      const depth = event.target.closest?.('#tab-ia .dcell');
-      if (depth) lastDepthCell = depth;
     });
     document.addEventListener('contextmenu', (event) => {
-      const iaSheetCell = event.target.closest?.('#ia-spreadsheet td, #depth-spreadsheet td');
+      const iaSheetCell = event.target.closest?.('#ia-spreadsheet td');
       if (iaSheetCell && !iaSheetCell.classList.contains('jexcel_row') && !iaSheetCell.classList.contains('jexcel_selectall')) {
         event.preventDefault();
         event.stopPropagation();
-        const inst = iaSheetCell.closest('#depth-spreadsheet') ? depthSheet : iaSheet;
+        const inst = iaSheet;
         const y = Number(iaSheetCell.getAttribute('data-y'));
         const at = Number.isFinite(y) ? y : 0;
         showMenu(event.clientX, event.clientY, [
@@ -5650,8 +5584,7 @@ function switchFlowSub(subId) {
       const story = event.target.closest?.('#tab-storyboard .story-card');
       const shape = event.target.closest?.('#tab-screens .screen-shape');
       const screen = event.target.closest?.('#tab-screens .screen-card-unit');
-      const depthCell = event.target.closest?.('#tab-ia .dcell, #tab-ia .depth-cols span');
-      if (!story && !shape && !screen && !depthCell) return;
+      if (!story && !shape && !screen) return;
       event.preventDefault();
       if (story) {
         showMenu(event.clientX, event.clientY, [
@@ -5691,13 +5624,6 @@ function switchFlowSub(subId) {
           { label: t('이 화면 삭제', 'Delete screen'), run: withHistory(() => screen.remove()) }
         ]);
         return;
-      }
-      if (depthCell) {
-        lastDepthCell = depthCell.classList?.contains('dcell') ? depthCell : lastDepthCell;
-        showMenu(event.clientX, event.clientY, [
-          { label: t('오른쪽에 Depth 칸 추가', 'Add Depth column'), run: () => window.addDepthColumn() },
-          { label: t('이 Depth 칸 삭제', 'Delete Depth column'), run: () => window.removeDepthColumn() }
-        ]);
       }
     }, true);
 
