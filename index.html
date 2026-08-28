@@ -1423,6 +1423,26 @@ body {
 }
 .ia-excel-layout { grid-template-columns: minmax(420px, 34%) minmax(700px, 1fr) !important; }
 
+body.ia-first-screen .master-main { padding: 10px 20px 24px; }
+body.ia-first-screen .master-export-group { flex-basis: auto; max-width: 48vw; }
+body.ia-first-screen #tab-ia.tab-view-content { gap: 8px; }
+body.ia-first-screen .ia-excel-page { gap: 6px; }
+body.ia-first-screen .ia-action-toolbar {
+  margin-bottom: 0;
+  padding: 5px 8px;
+  border-radius: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+body.ia-first-screen #ia-coord-bar {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+}
+body.ia-first-screen #ia-coord { width: 110px; padding: 4px 6px; }
+
 /* hide only the jexcel index gutter — not the first Depth column */
 #depth-spreadsheet td.jexcel_row,
 #depth-spreadsheet td.jexcel_selectall,
@@ -2152,6 +2172,7 @@ body {
           <li contenteditable="true">같은 레벨은 같은 행 레벨. 링크 ≠ 자식. 팝업은 바닥 화면과 같은 레벨.</li>
         </ul>
         <p class="edit-hint" contenteditable="true">빈 라벨만 채워 둔 시드다. 아레나·취합본 언어로 적는다.</p>
+        <p class="edit-hint" contenteditable="true">왼쪽 Depth와 오른쪽 시트를 채운 뒤 엑셀로 보낸다. Cmd/Ctrl+Z.</p>
       </details>
             <div class="ia-action-toolbar">
         <div class="ia-tool-btn-group">
@@ -2170,7 +2191,6 @@ body {
           <button class="ia-tool-btn" onclick="syncDepthGridFromTable()" data-ko="카드 동기화" data-en="Sync cards">카드 동기화</button>
         </div>
       </div>
-      <p class="edit-hint" style="margin:-8px 0 12px;" data-ko="왼쪽 Depth와 오른쪽 시트를 채운 뒤 엑셀로 보낸다. Cmd/Ctrl+Z." data-en="Fill Depth and the sheet, then export Excel. Cmd/Ctrl+Z.">왼쪽 Depth와 오른쪽 시트를 채운 뒤 엑셀로 보낸다. Cmd/Ctrl+Z.</p>
 
       <div class="ia-excel-layout">
         <div class="depth-sheet">
@@ -5107,9 +5127,13 @@ function switchFlowSub(subId) {
     if (!bar) {
       bar = document.createElement('div');
       bar.id = 'ia-coord-bar';
-      const layout = document.querySelector('#tab-ia .ia-excel-layout');
-      if (layout) layout.before(bar);
-      else page.prepend(bar);
+      const toolbar = document.querySelector('#tab-ia .ia-action-toolbar');
+      if (toolbar) toolbar.appendChild(bar);
+      else {
+        const layout = document.querySelector('#tab-ia .ia-excel-layout');
+        if (layout) layout.before(bar);
+        else page.prepend(bar);
+      }
     }
     bar.innerHTML = `<span data-ko="현재 칸" data-en="Current cell">${t('현재 칸', 'Current cell')}</span><input id="ia-coord" readonly value="IA!A1" aria-label="${t('현재 칸', 'Current cell')}"><span id="ia-coord-hint">${t('IA · A열 1행', 'IA · column A row 1')}</span>`;
   }
@@ -5322,6 +5346,7 @@ function switchFlowSub(subId) {
 
   function syncTabChrome(tabId) {
     const ia = tabId === 'ia';
+    document.body.classList.toggle('ia-first-screen', ia);
     const excel = document.getElementById('export-excel-btn');
     const png = document.getElementById('export-png-btn');
     const color = document.getElementById('ia-color-wrap');

@@ -177,6 +177,9 @@ test('IA fold, story bubble, screen select, and bilingual sheet menu stay locked
   assert.equal(html.includes('Insert a new row'), false);
   assert.equal(html.includes('About'), false);
   assert.match(html, /\.screen-card-unit\.selected/);
+  assert.match(html, /body\.ia-first-screen/);
+  assert.match(html, /const toolbar = document\.querySelector\('#tab-ia \.ia-action-toolbar'\)/);
+  assert.match(html, /toolbar\.appendChild\(bar\)/);
   const seedCards = html.split('id="tab-storyboard"')[1].split('id="tab-ia"')[0];
   assert.equal(seedCards.includes('<div class="story-visual-pane"><span class="story-badge">01</span><div class="story-dialogue-bubble"'), false);
   assert.match(seedCards, /<\/div>\s*<div class="story-dialogue-bubble" contenteditable="true">컷 1 \/ Frame 1<\/div>/);
