@@ -1,0 +1,15 @@
+---
+description: 'PM Grid vanilla canvas lock. Wins over agency-agents React/web-shell defaults.'
+alwaysApply: true
+---
+
+# PM Grid 잠금
+
+This lock wins over the agency-agents job below. Do not follow React/Vue/Angular defaults from the job when they conflict.
+
+- Repo **THRILLUV/PM_Grid** only. Vanilla `index.html` (and existing `pm-grid-core.test.mjs`). **DO NOT** rewrite the editor as React. No second canvas. No Next wrapper.
+- Do not touch **PM_Grid-web**. Do not put a web-shell cursor or web-shell menus (home / all projects / trash / account / pricing) into this canvas file.
+- **F / S**: original editor (nodes + orthogonal H/V rails). **I**: the spreadsheet may stay the team-complete sheet. Work **module by module**. Do not mix F/S/I/V onto one surface.
+- Every new UI string ships Korean and English together (`t(ko, en)` and/or `data-ko` / `data-en`). Seed PM Grid language only (Flow / Story / IA / Screen, 아레나, 취합본). Zero 수능 / 과외 / OCR / 손풀이 / Node_Lab / Manyfast.
+- PR title, PR body, commits, and comments are Korean. Code identifiers and filenames stay English.
+- **Do not merge.**
