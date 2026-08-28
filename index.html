@@ -2733,8 +2733,13 @@ function switchFlowSub(subId) {
   function restoreLocal() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) restoreSnapshot(JSON.parse(raw));
-      else restoreSnapshot({ schema: 'pm-grid-board', version: 2, ia: DEFAULT_IA, editLog: [] });
+      let data = raw ? JSON.parse(raw) : null;
+      const blob = JSON.stringify(data?.ia?.data || data?.ia?.depthData || []);
+      if (!data || /A 홈|A-1 자습/.test(blob)) {
+        data = { schema: 'pm-grid-board', version: 2, ia: DEFAULT_IA, editLog: [] };
+      }
+      restoreSnapshot(data);
+      paintRrColors();
     } catch (error) { console.warn('PM Grid local restore failed', error); }
   }
 
@@ -4735,6 +4740,52 @@ function switchFlowSub(subId) {
       el.style.maxHeight = 'none';
       el.style.height = 'auto';
       el.style.overflow = 'visible';
+    });
+    paintRrColors();
+  }
+  const RR_COLORS = {
+    '회원 및 유입': '#e8f6ee',
+    'AI 코어 경험': '#fbf3dc',
+    '과금 및 수익화': '#f8eaf2',
+    '운영 및 백오피스': '#eef1f4',
+    '그로스 및 마케팅': '#efeaf8'
+  };
+  const DEPTH_RR = {
+    '인트로': '회원 및 유입', '로그인': '회원 및 유입', '마이페이지': '회원 및 유입', '회원정보 설정': '회원 및 유입', '로그아웃': '회원 및 유입', '탈퇴': '회원 및 유입',
+    '구독 및 사용량': '과금 및 수익화', '요금제 선택': '과금 및 수익화', '결제하기': '과금 및 수익화', '결제 결과': '과금 및 수익화', '결제 내역': '과금 및 수익화', '환불 요청': '과금 및 수익화', 'Audit 리포트': '과금 및 수익화',
+    '메인': 'AI 코어 경험', '라이브러리': 'AI 코어 경험', '오답노트': 'AI 코어 경험', '학습 세션': 'AI 코어 경험', 'PDF 분할': 'AI 코어 경험', '문항 고정+대화': 'AI 코어 경험', '실전 모의고사': 'AI 코어 경험',
+    '관리자': '운영 및 백오피스', '대시보드': '운영 및 백오피스', '회원 관리': '운영 및 백오피스', '회원 목록': '운영 및 백오피스', '회원 상세': '운영 및 백오피스', 'AI 사용량': '운영 및 백오피스', '예외 대응': '운영 및 백오피스', '운영 로그': '운영 및 백오피스',
+    '타겟팅 배너': '그로스 및 마케팅', '푸시·알림톡 템플릿': '그로스 및 마케팅'
+  };
+  function ensureRrLegend() {
+    let bar = document.getElementById('ia-rr-legend');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'ia-rr-legend';
+      const coord = document.getElementById('ia-coord-bar');
+      if (coord) coord.after(bar);
+      else document.querySelector('#tab-ia')?.prepend(bar);
+    }
+    bar.style.cssText = 'display:grid;grid-template-columns:repeat(5, 170px);gap:8px;padding:8px 12px;font-size:12px;font-weight:650;width:max-content';
+    bar.innerHTML = Object.entries(RR_COLORS).map(([n, c]) =>
+      `<span style="display:flex;align-items:center;justify-content:center;width:170px;height:32px;border-radius:8px;background:${c};border:1px solid rgba(15,23,42,.08);color:#334155;white-space:nowrap;box-sizing:border-box">${n}</span>`
+    ).join('');
+  }
+  function paintRrColors() {
+    ensureRrLegend();
+    document.querySelectorAll('#ia-spreadsheet table.jexcel tbody tr').forEach((tr) => {
+      const cells = [...tr.querySelectorAll('td[data-x]')];
+      const vals = cells.map((td) => td.textContent.trim());
+      const key = Object.keys(RR_COLORS).find((k) => vals.includes(k));
+      if (!key) return;
+      cells.forEach((td) => td.style.setProperty('background-color', RR_COLORS[key], 'important'));
+    });
+    document.querySelectorAll('#depth-spreadsheet table.jexcel tbody tr').forEach((tr) => {
+      const cells = [...tr.querySelectorAll('td[data-x]')];
+      const label = cells.map((td) => td.textContent.trim()).find(Boolean);
+      const rr = DEPTH_RR[label];
+      if (!rr) return;
+      cells.forEach((td) => td.style.setProperty('background-color', RR_COLORS[rr], 'important'));
     });
   }
 
