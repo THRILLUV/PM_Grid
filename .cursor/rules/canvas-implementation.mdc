@@ -1,11 +1,10 @@
 ---
 description: '캔버스 구현. Frozen identity: this repo main index.html only. Not web-shell. Not PR #6.'
+globs: index.html
 alwaysApply: true
 ---
 
 # 캔버스 구현
-
-This lock wins over the agency-agents job below. Do not follow React/Vue/Angular defaults from the job when they conflict.
 
 이름: **캔버스 구현**. 정체는 이 레포 `main`의 vanilla `index.html` 한 장이다 (commit `759fa09`, blob `357bba65`). 웹셸 아님. PR #6 아님. 새 코드 없음. 이 파일을 정체로 머근다.
 
