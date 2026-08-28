@@ -1771,12 +1771,17 @@ body.ia-first-screen #ia-coord { width: 110px; padding: 4px 6px; }
   display: block;
   position: absolute;
   transform: none;
-  z-index: 3;
+  z-index: 4;
   pointer-events: none;
-  color: #94a3b8;
-  font-size: 18px;
+  color: #334155;
+  font-size: 22px;
+  font-weight: 800;
   line-height: 1;
   margin: 0;
+}
+#tab-flow .flow-node-box.selected {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
 }
 #tab-flow .flow-arrows,
 #tab-storyboard .flow-arrows {
@@ -3857,8 +3862,8 @@ function switchFlowSub(subId) {
       const ay = Number(p.a.dataset.fy || 0) + (p.a.offsetHeight || 28) / 2;
       const bx = Number(p.b.dataset.fx || 0) + (p.b.offsetWidth || 72) / 2;
       const by = Number(p.b.dataset.fy || 0) + (p.b.offsetHeight || 28) / 2;
-      ar.style.left = Math.round((ax + bx) / 2 - 9) + 'px';
-      ar.style.top = Math.round((ay + by) / 2 - 9) + 'px';
+      ar.style.left = Math.round((ax + bx) / 2 - 11) + 'px';
+      ar.style.top = Math.round((ay + by) / 2 - 26) + 'px';
       world.appendChild(ar);
     });
   }
