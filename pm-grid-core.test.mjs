@@ -143,6 +143,17 @@ test('mergeDepthDataIntoIaRows fills empty Depth cells and extra rows without cl
   assert.deepEqual(merged[2], ['', '', '', '', '취합본 / Compile', '버전 / Version', '', '']);
 });
 
+test('F draws ➔ headers and keeps Alt connect plus Shift marquee bindings', () => {
+  assert.match(html, /function placeFlowArrowHeaders/);
+  assert.match(html, /world\.appendChild\(ar\)/);
+  assert.match(html, /lane\.querySelectorAll\('\.flow-arrow-next'\)\.forEach\(\(el\) => el\.remove\(\)\)/);
+  assert.match(html, /event\.button === 0 && event\.altKey && node/);
+  assert.match(html, /event\.button === 0 && event\.shiftKey/);
+  assert.match(html, /el\.className = 'flow-marquee'/);
+  assert.equal(html.includes("if (event.target.closest('[contenteditable=\"true\"]')) return;"), false);
+  assert.equal(html.includes('#tab-flow .flow-arrow-next,\n#tab-storyboard .flow-arrow-next { display: none; }'), false);
+});
+
 test('flow box CSS does not treat every node as an invisible anchor', () => {
   assert.equal(html.includes('#tab-flow .flow-node-box, #tab-storyboard .flow-node-box[data-shape="anchor"]'), false);
   assert.match(html, /#tab-flow \.flow-node-box\[data-shape="anchor"\],\n#tab-storyboard \.flow-node-box\[data-shape="anchor"\]/);

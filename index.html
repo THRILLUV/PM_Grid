@@ -3837,21 +3837,29 @@ function switchFlowSub(subId) {
   }
 
   function placeFlowArrowHeaders(lane) {
+    if (!lane) return;
+    const world = ensureFlowWorld(lane);
     const nodes = [...lane.querySelectorAll('.flow-node-box')];
-    const arrows = [...lane.querySelectorAll('.flow-arrow-next')];
-    arrows.forEach((ar, i) => {
-      const a = nodes[i];
-      const b = nodes[i + 1];
-      if (!a || !b) {
-        ar.style.visibility = 'hidden';
-        return;
+    const byId = Object.fromEntries(nodes.map((n) => [ensureNodeId(n), n]));
+    let pairs = getEdges(lane)
+      .map((e) => ({ a: byId[e.from], b: byId[e.to], eid: e.id }))
+      .filter((p) => p.a && p.b);
+    if (!pairs.length && nodes.length >= 2) {
+      for (let i = 0; i < nodes.length - 1; i += 1) {
+        pairs.push({ a: nodes[i], b: nodes[i + 1], eid: 'seq-' + i });
       }
-      const left = Number(a.dataset.fx || 0) + (a.offsetWidth || 0);
-      const right = Number(b.dataset.fx || 0);
-      const midY = (Number(a.dataset.fy || 0) + Number(b.dataset.fy || 0)) / 2 + (a.offsetHeight || 28) / 2 - 10;
-      ar.style.visibility = 'visible';
-      ar.style.left = Math.round((left + right) / 2 - 9) + 'px';
-      ar.style.top = Math.round(midY) + 'px';
+    }
+    lane.querySelectorAll('.flow-arrow-next').forEach((el) => el.remove());
+    pairs.forEach((p) => {
+      const ar = arrow();
+      ar.dataset.eid = p.eid;
+      const ax = Number(p.a.dataset.fx || 0) + (p.a.offsetWidth || 72) / 2;
+      const ay = Number(p.a.dataset.fy || 0) + (p.a.offsetHeight || 28) / 2;
+      const bx = Number(p.b.dataset.fx || 0) + (p.b.offsetWidth || 72) / 2;
+      const by = Number(p.b.dataset.fy || 0) + (p.b.offsetHeight || 28) / 2;
+      ar.style.left = Math.round((ax + bx) / 2 - 9) + 'px';
+      ar.style.top = Math.round((ay + by) / 2 - 9) + 'px';
+      world.appendChild(ar);
     });
   }
 
@@ -4372,26 +4380,37 @@ function switchFlowSub(subId) {
       lane.addEventListener('pointerdown', (event) => {
         lastFlowPointer = { x: event.clientX, y: event.clientY };
         if (event.button !== 0 && event.button !== 1) return;
+        if (event.target.closest('.flow-zoom-bar')) return;
         const port = event.target.closest('.flow-port');
-        const nodeEarly = event.target.closest('.flow-node-box');
-        if (nodeEarly && event.button === 0 && event.altKey) {
+        const node = event.target.closest('.flow-node-box');
+        if (event.button === 0 && event.altKey && node && lane.contains(node)) {
           event.preventDefault();
           event.stopPropagation();
-          link = { fromNode: nodeEarly, smart: true, fromPort: port?.dataset.port || 'r', toPort: 'l' };
+          link = { fromNode: node, smart: true, fromPort: port && port.dataset.port ? port.dataset.port : 'r', toPort: 'l' };
+          lane.setPointerCapture(event.pointerId);
+          return;
+        }
+        if (event.button === 0 && event.shiftKey) {
+          event.preventDefault();
+          event.stopPropagation();
+          const lr = lane.getBoundingClientRect();
+          const el = document.createElement('div');
+          el.className = 'flow-marquee';
+          lane.appendChild(el);
+          marquee = { el, x0: event.clientX - lr.left, y0: event.clientY - lr.top };
+          clearFlowSelection(lane);
           lane.setPointerCapture(event.pointerId);
           return;
         }
         if (port && event.button === 0 && !event.metaKey && !event.ctrlKey) {
-          const node = port.closest('.flow-node-box');
-          if (!node) return;
+          const portNode = port.closest('.flow-node-box');
+          if (!portNode) return;
           event.preventDefault();
           event.stopPropagation();
-          link = { fromNode: node, fromPort: port.dataset.port };
+          link = { fromNode: portNode, fromPort: port.dataset.port };
           lane.setPointerCapture(event.pointerId);
           return;
         }
-        if (event.target.closest('[contenteditable="true"]') && !event.shiftKey) return;
-        const node = event.target.closest('.flow-node-box');
         const cmd = event.metaKey || event.ctrlKey;
         if (node && event.button === 0) {
           if (cmd) {
@@ -4418,7 +4437,6 @@ function switchFlowSub(subId) {
           return;
         }
         if (node) return;
-        if (event.target.closest('.flow-zoom-bar')) return;
         event.preventDefault();
         if (flowLineTool && event.button === 0) {
           const pt = clientToWorld(lane, event.clientX, event.clientY);
@@ -4433,16 +4451,6 @@ function switchFlowSub(subId) {
           lane.setPointerCapture(event.pointerId);
           return;
         }
-        if (event.shiftKey && event.button === 0) {
-          const lr = lane.getBoundingClientRect();
-          const el = document.createElement('div');
-          el.className = 'flow-marquee';
-          lane.appendChild(el);
-          marquee = { el, x0: event.clientX - lr.left, y0: event.clientY - lr.top };
-          clearFlowSelection(lane);
-          lane.setPointerCapture(event.pointerId);
-          return;
-        }
         clearFlowSelection(lane);
         pan = {
           x0: Number(lane.dataset.panX || 0),
@@ -4452,7 +4460,7 @@ function switchFlowSub(subId) {
         };
         lane.classList.add('panning');
         lane.setPointerCapture(event.pointerId);
-      });
+      }, true);
       lane.addEventListener('pointermove', (event) => {
         lastFlowPointer = { x: event.clientX, y: event.clientY };
         if (flowLineDraft && flowLineDraft.lane === lane) {
@@ -4554,6 +4562,7 @@ function switchFlowSub(subId) {
           link = null;
           clearHot();
           drawFlowArrows(lane);
+          placeFlowArrowHeaders(lane);
           saveLocal();
           return;
         }
