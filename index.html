@@ -341,10 +341,9 @@ body {
   font-weight: 600;
   color: #1e293b;
   box-shadow: var(--shadow-sm);
-  position: absolute;
-  bottom: 12px;
-  right: 16px;
-  max-width: 75%;
+  position: relative;
+  max-width: calc(100% - 32px);
+  margin: 10px 16px 4px;
 }
 .story-content-pane {
   padding: 20px;
@@ -610,13 +609,28 @@ body {
 .ia-excel-page {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
 }
 .ia-excel-head {
   background: #fff;
   border: 1px solid #d4d4d8;
-  padding: 18px 22px;
+  padding: 8px 14px;
 }
+.ia-excel-head summary {
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  list-style: none;
+}
+.ia-excel-head summary::-webkit-details-marker { display: none; }
+.ia-excel-head summary::after {
+  content: ' ▾';
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 700;
+}
+.ia-excel-head[open] summary::after { content: ' ▴'; }
 .ia-excel-head h3 {
   font-size: 22px;
   font-weight: 800;
@@ -869,9 +883,16 @@ body {
 .done-paper { left: 16px; top: 30px; width: 46%; height: 150px; padding: 10px; }
 .done-web { right: 16px; top: 42px; width: 42%; height: 132px; padding: 8px; background: #fff; }
 .check { display: inline-block; margin-top: 8px; background: #e8f8ee; color: #248a3d; font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 999px; }
-.story-dialogue-bubble.bl { left: 12px; bottom: 12px; }
-.story-dialogue-bubble.br { right: 12px; bottom: 12px; }
-.story-dialogue-bubble.tr { right: 12px; top: 42px; }
+.story-card > .story-dialogue-bubble {
+  position: relative;
+  left: auto;
+  right: auto;
+  top: auto;
+  bottom: auto;
+  max-width: calc(100% - 32px);
+  margin: 10px 16px 4px;
+  overflow: visible;
+}
 
 
 
@@ -884,9 +905,9 @@ body {
   object-position: center 20%;
   display: block;
 }
-.story-dialogue-bubble {
-  max-width: 46%;
-  overflow: hidden;
+.story-card > .story-dialogue-bubble {
+  max-width: calc(100% - 32px);
+  overflow: visible;
   box-sizing: border-box;
 }
 .bubble-resize {
@@ -1188,6 +1209,15 @@ body {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
+.screen-card-unit {
+  cursor: pointer;
+}
+.screen-card-unit.selected {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
+}
 .tab-mini-bar {
   display: flex;
   gap: 8px;
@@ -1392,6 +1422,26 @@ body {
   flex-wrap: nowrap !important;
 }
 .ia-excel-layout { grid-template-columns: minmax(420px, 34%) minmax(700px, 1fr) !important; }
+
+body.ia-first-screen .master-main { padding: 10px 20px 24px; }
+body.ia-first-screen .master-export-group { flex-basis: auto; max-width: 48vw; }
+body.ia-first-screen #tab-ia.tab-view-content { gap: 8px; }
+body.ia-first-screen .ia-excel-page { gap: 6px; }
+body.ia-first-screen .ia-action-toolbar {
+  margin-bottom: 0;
+  padding: 5px 8px;
+  border-radius: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+body.ia-first-screen #ia-coord-bar {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+}
+body.ia-first-screen #ia-coord { width: 110px; padding: 4px 6px; }
 
 /* hide only the jexcel index gutter — not the first Depth column */
 #depth-spreadsheet td.jexcel_row,
@@ -2095,15 +2145,18 @@ body {
       </div>
       <div class="storyboard-grid">
         <article class="story-card">
-          <div class="story-visual-pane"><span class="story-badge">01</span><div class="story-dialogue-bubble" contenteditable="true">컷 1 / Frame 1</div></div>
+          <div class="story-visual-pane"><span class="story-badge">01</span></div>
+          <div class="story-dialogue-bubble" contenteditable="true">컷 1 / Frame 1</div>
           <div class="story-content-pane"><h4 contenteditable="true">1. 컷 / Frame</h4><p contenteditable="true"></p></div>
         </article>
         <article class="story-card">
-          <div class="story-visual-pane"><span class="story-badge">02</span><div class="story-dialogue-bubble" contenteditable="true">컷 2 / Frame 2</div></div>
+          <div class="story-visual-pane"><span class="story-badge">02</span></div>
+          <div class="story-dialogue-bubble" contenteditable="true">컷 2 / Frame 2</div>
           <div class="story-content-pane"><h4 contenteditable="true">2. 컷 / Frame</h4><p contenteditable="true"></p></div>
         </article>
         <article class="story-card">
-          <div class="story-visual-pane"><span class="story-badge">03</span><div class="story-dialogue-bubble" contenteditable="true">컷 3 / Frame 3</div></div>
+          <div class="story-visual-pane"><span class="story-badge">03</span></div>
+          <div class="story-dialogue-bubble" contenteditable="true">컷 3 / Frame 3</div>
           <div class="story-content-pane"><h4 contenteditable="true">3. 컷 / Frame</h4><p contenteditable="true"></p></div>
         </article>
       </div>
@@ -2112,14 +2165,15 @@ body {
 
   <section class="tab-view-content" id="tab-ia" role="tabpanel" hidden>
     <div class="ia-excel-page">
-      <div class="ia-excel-head">
-        <h3 contenteditable="true">IA / 정보 구조도</h3>
+      <details class="ia-excel-head" id="ia-help-box">
+        <summary data-ko="IA / 정보 구조도" data-en="IA / Information architecture">IA / 정보 구조도</summary>
         <ul>
           <li contenteditable="true">열: 화면 구분 / Screen type, 화면 레벨 / Level, Depth 1–4, 라벨 / Label, 내비 / Nav.</li>
           <li contenteditable="true">같은 레벨은 같은 행 레벨. 링크 ≠ 자식. 팝업은 바닥 화면과 같은 레벨.</li>
         </ul>
         <p class="edit-hint" contenteditable="true">빈 라벨만 채워 둔 시드다. 아레나·취합본 언어로 적는다.</p>
-      </div>
+        <p class="edit-hint" contenteditable="true">왼쪽 Depth와 오른쪽 시트를 채운 뒤 엑셀로 보낸다. Cmd/Ctrl+Z.</p>
+      </details>
             <div class="ia-action-toolbar">
         <div class="ia-tool-btn-group">
           <span style="font-size:12px; font-weight:700; color:#475569; margin-right:4px;" data-ko="엑셀 시트:" data-en="Excel sheet:">엑셀 시트:</span>
@@ -2137,7 +2191,6 @@ body {
           <button class="ia-tool-btn" onclick="syncDepthGridFromTable()" data-ko="카드 동기화" data-en="Sync cards">카드 동기화</button>
         </div>
       </div>
-      <p class="edit-hint" style="margin:-8px 0 12px;" data-ko="왼쪽 Depth와 오른쪽 시트를 채운 뒤 엑셀로 보낸다. Cmd/Ctrl+Z." data-en="Fill Depth and the sheet, then export Excel. Cmd/Ctrl+Z.">왼쪽 Depth와 오른쪽 시트를 채운 뒤 엑셀로 보낸다. Cmd/Ctrl+Z.</p>
 
       <div class="ia-excel-layout">
         <div class="depth-sheet">
@@ -3394,6 +3447,17 @@ function switchFlowSub(subId) {
     return { data: next, stripped };
   }
 
+  function iaSheetContextMenu(obj, x, y) {
+    const row = Number(y);
+    const at = Number.isFinite(row) ? row : 0;
+    return [
+      { title: '위에 행 추가 / Insert row above', onclick: () => obj.insertRow(1, at, true) },
+      { title: '아래에 행 추가 / Insert row below', onclick: () => obj.insertRow(1, at, false) },
+      { title: '행 삭제 / Delete row', onclick: () => obj.deleteRow(at, 1) },
+      { title: '복사 / Copy', onclick: () => { if (obj.copy) obj.copy(); } }
+    ];
+  }
+
   function captureFlowGraph() {
     return [...document.querySelectorAll('#tab-flow .flow-step-lane, #tab-storyboard .flow-step-lane')].map((lane) => ({
       id: ensureLaneId(lane),
@@ -4487,7 +4551,7 @@ function switchFlowSub(subId) {
     const n = document.querySelectorAll('#tab-storyboard .story-card').length + 1;
     const card = document.createElement('article');
     card.className = 'story-card';
-    card.innerHTML = `<div class="story-visual-pane"><span class="story-badge">${String(n).padStart(2,'0')}</span><div class="story-dialogue-bubble" contenteditable="true">${n}. 컷 / Frame ${n}</div></div><div class="story-content-pane"><h4 contenteditable="true">${n}. 컷 / Frame</h4><p contenteditable="true"></p></div>`;
+    card.innerHTML = `<div class="story-visual-pane"><span class="story-badge">${String(n).padStart(2,'0')}</span></div><div class="story-dialogue-bubble" contenteditable="true">${n}. 컷 / Frame ${n}</div><div class="story-content-pane"><h4 contenteditable="true">${n}. 컷 / Frame</h4><p contenteditable="true"></p></div>`;
     decorateStoryCard(card);
     return card;
   }
@@ -4550,9 +4614,7 @@ function switchFlowSub(subId) {
           if (!img) {
             img = document.createElement('img');
             img.className = 'story-art';
-            const bubble = pane.querySelector('.story-dialogue-bubble');
-            if (bubble) pane.insertBefore(img, bubble);
-            else pane.appendChild(img);
+            pane.appendChild(img);
           }
           img.src = reader.result;
           saveLocal();
@@ -4615,6 +4677,16 @@ function switchFlowSub(subId) {
     });
   }
 
+  function placeStoryBubblesOutsideFace() {
+    document.querySelectorAll('#tab-storyboard .story-card').forEach((card) => {
+      const pane = card.querySelector('.story-visual-pane');
+      const bubble = card.querySelector('.story-dialogue-bubble');
+      if (!pane || !bubble) return;
+      if (pane.contains(bubble)) pane.after(bubble);
+      bubble.classList.remove('bl', 'br', 'tr');
+    });
+  }
+
   function bindStoryChrome() {
     const grid = document.querySelector('#tab-storyboard .storyboard-grid');
     const wrap = document.querySelector('#tab-storyboard .storyboard-wrap') || tabEl('storyboard');
@@ -4622,6 +4694,7 @@ function switchFlowSub(subId) {
       label: t('컷 추가', 'Add frame'),
       run: withHistory(() => { grid.appendChild(makeStoryCard()); decorateAllStories(); renumberStories(); enableStoryDrag(); })
     }]);
+    placeStoryBubblesOutsideFace();
     decorateAllStories();
     enableStoryDrag();
     bindFlowChrome();
@@ -4952,6 +5025,16 @@ function switchFlowSub(subId) {
     });
   }
 
+  function selectScreenCard(unit) {
+    document.querySelectorAll('#tab-screens .screen-card-unit').forEach((el) => {
+      el.classList.remove('selected');
+      el.removeAttribute('aria-selected');
+    });
+    if (!unit) return;
+    unit.classList.add('selected');
+    unit.setAttribute('aria-selected', 'true');
+  }
+
   function bindScreenChrome() {
     const deck = document.querySelector('#tab-screens .screen-design-deck') || tabEl('screens');
     ensureMiniBar(deck, 'screen-mini-bar', [
@@ -4959,6 +5042,14 @@ function switchFlowSub(subId) {
       { label: t('원', 'Circle'), run: () => setScreenTool('circle') },
       { label: t('화면 추가', 'Add screen'), run: withHistory(() => { deck.appendChild(makeScreenCard()); enableScreenShapeDrag(); }) }
     ]);
+    if (deck && deck.dataset.cardSelectBound !== '1') {
+      deck.dataset.cardSelectBound = '1';
+      deck.addEventListener('click', (event) => {
+        const unit = event.target.closest('.screen-card-unit');
+        if (!unit) return;
+        selectScreenCard(unit);
+      });
+    }
     enableScreenShapeDrag();
   }
 
@@ -5036,9 +5127,13 @@ function switchFlowSub(subId) {
     if (!bar) {
       bar = document.createElement('div');
       bar.id = 'ia-coord-bar';
-      const layout = document.querySelector('#tab-ia .ia-excel-layout');
-      if (layout) layout.before(bar);
-      else page.prepend(bar);
+      const toolbar = document.querySelector('#tab-ia .ia-action-toolbar');
+      if (toolbar) toolbar.appendChild(bar);
+      else {
+        const layout = document.querySelector('#tab-ia .ia-excel-layout');
+        if (layout) layout.before(bar);
+        else page.prepend(bar);
+      }
     }
     bar.innerHTML = `<span data-ko="현재 칸" data-en="Current cell">${t('현재 칸', 'Current cell')}</span><input id="ia-coord" readonly value="IA!A1" aria-label="${t('현재 칸', 'Current cell')}"><span id="ia-coord-hint">${t('IA · A열 1행', 'IA · column A row 1')}</span>`;
   }
@@ -5081,6 +5176,7 @@ function switchFlowSub(subId) {
       tableOverflow: false,
       tableWidth: '100%',
       tableHeight: '560px',
+      contextMenu: iaSheetContextMenu,
       onselection: (el, x1, y1, x2, y2) => { lastIaFocus = 'depth'; setCoord('Depth', x1, y1, x2, y2); },
       onchange: () => { if (!restoring) { pushTabHistory('ia'); saveLocal(); } }
     });
@@ -5136,6 +5232,7 @@ function switchFlowSub(subId) {
       tableOverflow: false,
       tableWidth: '100%',
       tableHeight: '560px',
+      contextMenu: iaSheetContextMenu,
       onselection: (el, x1, y1, x2, y2) => { lastIaFocus = 'info'; setCoord('IA', x1, y1, x2, y2); },
       onchange: () => { if (!restoring) { pushTabHistory('ia'); saveLocal(); } }
     };
@@ -5249,6 +5346,7 @@ function switchFlowSub(subId) {
 
   function syncTabChrome(tabId) {
     const ia = tabId === 'ia';
+    document.body.classList.toggle('ia-first-screen', ia);
     const excel = document.getElementById('export-excel-btn');
     const png = document.getElementById('export-png-btn');
     const color = document.getElementById('ia-color-wrap');
@@ -5339,7 +5437,10 @@ function switchFlowSub(subId) {
     iaLockedDepthAoa,
     forbiddenSampleWords,
     hasForbiddenSample,
-    sanitizeImportedBoard
+    sanitizeImportedBoard,
+    iaSheetContextMenu,
+    placeStoryBubblesOutsideFace,
+    selectScreenCard
   };
 
   const _origSwitch = window.switchMasterTab;
@@ -5386,6 +5487,21 @@ function switchFlowSub(subId) {
       if (depth) lastDepthCell = depth;
     });
     document.addEventListener('contextmenu', (event) => {
+      const iaSheetCell = event.target.closest?.('#ia-spreadsheet td, #depth-spreadsheet td');
+      if (iaSheetCell && !iaSheetCell.classList.contains('jexcel_row') && !iaSheetCell.classList.contains('jexcel_selectall')) {
+        event.preventDefault();
+        event.stopPropagation();
+        const inst = iaSheetCell.closest('#depth-spreadsheet') ? depthSheet : iaSheet;
+        const y = Number(iaSheetCell.getAttribute('data-y'));
+        const at = Number.isFinite(y) ? y : 0;
+        showMenu(event.clientX, event.clientY, [
+          { label: '위에 행 추가 / Insert row above', run: withHistory(() => inst && inst.insertRow(1, at, true)) },
+          { label: '아래에 행 추가 / Insert row below', run: withHistory(() => inst && inst.insertRow(1, at, false)) },
+          { label: '행 삭제 / Delete row', run: withHistory(() => inst && inst.deleteRow(at, 1)) },
+          { label: '복사 / Copy', run: () => { if (inst && inst.copy) inst.copy(); } }
+        ]);
+        return;
+      }
       const flowCanvas = event.target.closest?.('#tab-flow .flow-step-lane, #tab-storyboard .flow-step-lane');
       if (flowCanvas) {
         const flowNode = event.target.closest?.('.flow-node-box');
@@ -5518,7 +5634,7 @@ function switchFlowSub(subId) {
           { label: t('이 Depth 칸 삭제', 'Delete Depth column'), run: () => window.removeDepthColumn() }
         ]);
       }
-    });
+    }, true);
 
     window.addEventListener('keydown', (event) => {
       const mod = event.metaKey || event.ctrlKey;

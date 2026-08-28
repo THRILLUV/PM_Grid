@@ -167,6 +167,24 @@ test('sanitizeImportedBoard drops 수능 과외 OCR 손풀이 rows from a v1 boa
   assert.equal(core.hasForbiddenSample('수능'), true);
 });
 
+test('IA fold, story bubble, screen select, and bilingual sheet menu stay locked', () => {
+  assert.match(html, /<details class="ia-excel-head" id="ia-help-box">/);
+  assert.equal(html.includes('<details class="ia-excel-head" id="ia-help-box" open'), false);
+  assert.match(html, /function placeStoryBubblesOutsideFace/);
+  assert.match(html, /function selectScreenCard/);
+  assert.match(html, /function iaSheetContextMenu/);
+  assert.match(html, /위에 행 추가 \/ Insert row above/);
+  assert.equal(html.includes('Insert a new row'), false);
+  assert.equal(html.includes('About'), false);
+  assert.match(html, /\.screen-card-unit\.selected/);
+  assert.match(html, /body\.ia-first-screen/);
+  assert.match(html, /const toolbar = document\.querySelector\('#tab-ia \.ia-action-toolbar'\)/);
+  assert.match(html, /toolbar\.appendChild\(bar\)/);
+  const seedCards = html.split('id="tab-storyboard"')[1].split('id="tab-ia"')[0];
+  assert.equal(seedCards.includes('<div class="story-visual-pane"><span class="story-badge">01</span><div class="story-dialogue-bubble"'), false);
+  assert.match(seedCards, /<\/div>\s*<div class="story-dialogue-bubble" contenteditable="true">컷 1 \/ Frame 1<\/div>/);
+});
+
 test('frontend developer and korean rules stay always-on', () => {
   const fe = readFileSync(new URL('./.cursor/rules/frontend-developer.mdc', import.meta.url), 'utf8');
   const ko = readFileSync(new URL('./.cursor/rules/korean.mdc', import.meta.url), 'utf8');
