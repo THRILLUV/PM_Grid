@@ -177,6 +177,8 @@ test('IA fold, story bubble, screen select, and bilingual sheet menu stay locked
   assert.equal(html.includes('Insert a new row'), false);
   assert.equal(html.includes('About'), false);
   assert.match(html, /\.screen-card-unit\.selected/);
+  assert.match(html, /#tab-screens \.screen-card-unit\.selected \{[\s\S]*border:\s*3px solid #2563eb/);
+  assert.match(html, /root\.addEventListener\('pointerdown'/);
   assert.match(html, /body\.ia-first-screen/);
   assert.match(html, /const toolbar = document\.querySelector\('#tab-ia \.ia-action-toolbar'\)/);
   assert.match(html, /toolbar\.appendChild\(bar\)/);
