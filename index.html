@@ -5462,6 +5462,21 @@ function switchFlowSub(subId) {
       if (depth) lastDepthCell = depth;
     });
     document.addEventListener('contextmenu', (event) => {
+      const iaSheetCell = event.target.closest?.('#ia-spreadsheet td, #depth-spreadsheet td');
+      if (iaSheetCell && !iaSheetCell.classList.contains('jexcel_row') && !iaSheetCell.classList.contains('jexcel_selectall')) {
+        event.preventDefault();
+        event.stopPropagation();
+        const inst = iaSheetCell.closest('#depth-spreadsheet') ? depthSheet : iaSheet;
+        const y = Number(iaSheetCell.getAttribute('data-y'));
+        const at = Number.isFinite(y) ? y : 0;
+        showMenu(event.clientX, event.clientY, [
+          { label: '위에 행 추가 / Insert row above', run: withHistory(() => inst && inst.insertRow(1, at, true)) },
+          { label: '아래에 행 추가 / Insert row below', run: withHistory(() => inst && inst.insertRow(1, at, false)) },
+          { label: '행 삭제 / Delete row', run: withHistory(() => inst && inst.deleteRow(at, 1)) },
+          { label: '복사 / Copy', run: () => { if (inst && inst.copy) inst.copy(); } }
+        ]);
+        return;
+      }
       const flowCanvas = event.target.closest?.('#tab-flow .flow-step-lane, #tab-storyboard .flow-step-lane');
       if (flowCanvas) {
         const flowNode = event.target.closest?.('.flow-node-box');
@@ -5594,7 +5609,7 @@ function switchFlowSub(subId) {
           { label: t('이 Depth 칸 삭제', 'Delete Depth column'), run: () => window.removeDepthColumn() }
         ]);
       }
-    });
+    }, true);
 
     window.addEventListener('keydown', (event) => {
       const mod = event.metaKey || event.ctrlKey;
