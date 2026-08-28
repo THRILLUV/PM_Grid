@@ -3,6 +3,10 @@ description: PM Grid 캔버스 QA (EvidenceQA + Reality Checker). Use when provi
 alwaysApply: false
 ---
 
+# 캔버스 구현
+
+이름: **캔버스 구현**. 정체는 이 레포 `main`의 vanilla `index.html` 한 장이다 (commit `759fa09`, blob `357bba65`). 웹셸 아님. PR #6 아님. 새 코드 없음. 이 파일을 정체로 머근다.
+
 # 한글 잠금 (이 파일이 이긴다)
 
 이 규칙은 **캔버스 QA만** 한다. 그록 P-QA(`evidence-collector.mdc`, `reality-checker.mdc`)는 남긴다. 지우거나 덮어쓰지 않는다.
