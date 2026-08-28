@@ -1218,6 +1218,18 @@ body {
   border-color: #1d4ed8;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
 }
+#tab-screens,
+#tab-screens .screen-design-deck {
+  overflow: visible;
+}
+#tab-screens .screen-design-deck {
+  padding: 6px;
+}
+#tab-screens .screen-card-unit.selected {
+  outline: none;
+  border: 3px solid #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.28);
+}
 .tab-mini-bar {
   display: flex;
   gap: 8px;
@@ -5035,6 +5047,18 @@ function switchFlowSub(subId) {
     unit.setAttribute('aria-selected', 'true');
   }
 
+  function bindScreenCardSelect() {
+    const root = document.getElementById('tab-screens');
+    if (!root || root.dataset.cardSelectBound === '1') return;
+    root.dataset.cardSelectBound = '1';
+    root.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      if (event.target.closest('#screen-mini-bar')) return;
+      const unit = event.target.closest('.screen-card-unit');
+      if (unit) selectScreenCard(unit);
+    }, true);
+  }
+
   function bindScreenChrome() {
     const deck = document.querySelector('#tab-screens .screen-design-deck') || tabEl('screens');
     ensureMiniBar(deck, 'screen-mini-bar', [
@@ -5042,14 +5066,7 @@ function switchFlowSub(subId) {
       { label: t('원', 'Circle'), run: () => setScreenTool('circle') },
       { label: t('화면 추가', 'Add screen'), run: withHistory(() => { deck.appendChild(makeScreenCard()); enableScreenShapeDrag(); }) }
     ]);
-    if (deck && deck.dataset.cardSelectBound !== '1') {
-      deck.dataset.cardSelectBound = '1';
-      deck.addEventListener('click', (event) => {
-        const unit = event.target.closest('.screen-card-unit');
-        if (!unit) return;
-        selectScreenCard(unit);
-      });
-    }
+    bindScreenCardSelect();
     enableScreenShapeDrag();
   }
 
