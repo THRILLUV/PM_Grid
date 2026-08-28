@@ -147,44 +147,13 @@ test('F draws ➔ headers and keeps Alt connect plus Shift marquee bindings', ()
   assert.match(html, /function placeFlowArrowHeaders/);
   assert.match(html, /world\.appendChild\(ar\)/);
   assert.match(html, /lane\.querySelectorAll\('\.flow-arrow-next'\)\.forEach\(\(el\) => el\.remove\(\)\)/);
-  assert.match(html, /event\.button === 0 && altOn && node/);
-  assert.match(html, /event\.button === 0 && shiftOn/);
+  assert.match(html, /if \(event\.altKey\) \{/);
+  assert.match(html, /if \(event\.shiftKey && event\.button === 0\) \{/);
   assert.match(html, /el\.className = 'flow-marquee'/);
-  assert.equal(html.includes("if (event.target.closest('[contenteditable=\"true\"]')) return;"), false);
+  assert.match(html, /placeFlowArrowHeaders\(lane\)/);
   assert.equal(html.includes('#tab-flow .flow-arrow-next,\n#tab-storyboard .flow-arrow-next { display: none; }'), false);
-});
-
-test('empty F [] edges still migrate and Option connect persists a line plus ➔', () => {
-  const migrate = extractFn('migrateSequentialEdges');
-  assert.equal(migrate.includes('if (lane.dataset.edges) return;'), false);
-  assert.match(html, /document\.addEventListener\('pointerup'/);
-  assert.match(html, /addEventListener\('mousedown'/);
-  assert.match(html, /addEventListener\('mouseup'/);
-  assert.match(html, /others\.length === 1/);
-  assert.match(html, /el\.className = 'flow-marquee'/);
-  assert.match(html, /event\.shiftKey \|\| flowShiftHeld/);
-  assert.equal(html.includes('if (!restored || !iaSheet) bootSpreadsheetFromTable();'), false);
-  assert.match(html, /if \(tabId === 'ia' && !iaSheet\) bootSpreadsheetFromTable/);
-  const draw = extractFn('drawFlowArrows');
-  assert.match(draw, /placeFlowArrowHeaders\(lane\)/);
-  const flowSrc = [
-    extractFn('uid'),
-    extractFn('ensureNodeId'),
-    extractFn('getEdges'),
-    extractFn('setEdges'),
-    extractFn('migrateSequentialEdges')
-  ].join('\n');
-  const flow = new Function(flowSrc + '; return { getEdges, setEdges, migrateSequentialEdges };')();
-  const two = () => [{ dataset: { nid: 'n1' } }, { dataset: { nid: 'n2' } }];
-  const lane = { dataset: { edges: '[]' }, querySelectorAll: two };
-  flow.migrateSequentialEdges(lane);
-  assert.equal(flow.getEdges(lane).length, 1);
-  assert.equal(flow.getEdges(lane)[0].from, 'n1');
-  assert.equal(flow.getEdges(lane)[0].to, 'n2');
-  const stale = { dataset: { edges: JSON.stringify([{ from: 'gone', to: 'gone2' }]) }, querySelectorAll: two };
-  flow.migrateSequentialEdges(stale);
-  assert.equal(flow.getEdges(stale).length, 1);
-  assert.equal(flow.getEdges(stale)[0].from, 'n1');
+  assert.equal(html.includes("document.addEventListener('mousedown'"), false);
+  assert.equal(html.includes("document.addEventListener('pointerup'"), false);
 });
 
 test('flow box CSS does not treat every node as an invisible anchor', () => {

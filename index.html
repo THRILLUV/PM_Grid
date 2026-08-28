@@ -3157,24 +3157,7 @@ function switchFlowSub(subId) {
     }
   }
 
-  let flowAltHeld = false;
-  let flowShiftHeld = false;
-  function bindFlowModifierKeys() {
-    if (window.__pmGridFlowMods) return;
-    window.__pmGridFlowMods = true;
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Alt' || event.code === 'AltLeft' || event.code === 'AltRight' || event.altKey) flowAltHeld = true;
-      if (event.key === 'Shift' || event.code === 'ShiftLeft' || event.code === 'ShiftRight' || event.shiftKey) flowShiftHeld = true;
-    }, true);
-    document.addEventListener('keyup', (event) => {
-      if (event.key === 'Alt' || event.code === 'AltLeft' || event.code === 'AltRight') flowAltHeld = false;
-      if (event.key === 'Shift' || event.code === 'ShiftLeft' || event.code === 'ShiftRight') flowShiftHeld = false;
-    }, true);
-    window.addEventListener('blur', () => { flowAltHeld = false; flowShiftHeld = false; });
-  }
-
   function bindFlowChrome() {
-    bindFlowModifierKeys();
     bindFlowWheelZoom();
     enableFlowDrag();
     bindFlowLineToolKeys();
@@ -3210,11 +3193,8 @@ function switchFlowSub(subId) {
   }
 
   function migrateSequentialEdges(lane) {
+    if (lane.dataset.edges) return;
     const nodes = [...lane.querySelectorAll('.flow-node-box')];
-    const byId = Object.fromEntries(nodes.map((n) => [ensureNodeId(n), n]));
-    const live = getEdges(lane).filter((e) => byId[e.from] && byId[e.to]);
-    if (live.length !== getEdges(lane).length) setEdges(lane, live);
-    if (live.length) return;
     const edges = [];
     for (let i = 0; i < nodes.length - 1; i += 1) {
       edges.push({
@@ -3818,14 +3798,14 @@ function switchFlowSub(subId) {
       if (e.dash) line.setAttribute('stroke-dasharray', '10 8');
       svg.appendChild(hit);
       svg.appendChild(line);
-      const segs = edgeSegments(e, byId[e.from], byId[e.to]);
-      const last = segs[segs.length - 1];
-      if (last && Math.hypot(last.x2 - last.x1, last.y2 - last.y1) > 4) {
+      if (!e.ortho) {
+        const tip = portAnchor(byId[e.to], toPort, null, 4);
+        const inward = portDir(toPort).map((v) => -v);
         const head = document.createElementNS(NS, 'polygon');
         head.setAttribute('class', 'flow-link');
         head.setAttribute('data-eid', e.id);
-        head.setAttribute('points', arrowPoly({ x: last.x2, y: last.y2 }, [last.x2 - last.x1, last.y2 - last.y1], 12));
-        head.setAttribute('fill', e.ortho ? '#38bdf8' : '#2563eb');
+        head.setAttribute('points', arrowPoly(tip, inward, 12));
+        head.setAttribute('fill', '#2563eb');
         svg.appendChild(head);
       }
     });
@@ -4311,47 +4291,6 @@ function switchFlowSub(subId) {
     saveLocal();
   }
 
-  function flowEventEl(event) {
-    const t = event && event.target;
-    if (t instanceof Element) return t;
-    return t && t.parentElement ? t.parentElement : null;
-  }
-
-  function persistSmartEdge(lane, fromNode, toNode) {
-    if (!lane || !fromNode || !toNode || fromNode === toNode) return false;
-    const ports = guessConnectPorts(fromNode, toNode);
-    const edge = {
-      id: uid('e'),
-      from: ensureNodeId(fromNode),
-      fromPort: ports.from,
-      to: ensureNodeId(toNode),
-      toPort: ports.to,
-      ortho: true
-    };
-    const edges = getEdges(lane);
-    if (!edges.some((e) => e.from === edge.from && e.to === edge.to)) {
-      pushTabHistory('flow');
-      edges.push(edge);
-      setEdges(lane, edges);
-    }
-    drawFlowArrows(lane);
-    saveLocal();
-    return true;
-  }
-
-  function resolveLinkTarget(lane, fromNode, clientX, clientY, hover) {
-    const stack = (typeof document.elementsFromPoint === 'function')
-      ? document.elementsFromPoint(clientX, clientY)
-      : [];
-    let toNode = stack.map((el) => el.closest && el.closest('.flow-node-box')).find((n) => n && n !== fromNode && lane.contains(n));
-    toNode = toNode || hover || lane.querySelector('.flow-node-box.link-hot');
-    if (!toNode || toNode === fromNode) {
-      const others = [...lane.querySelectorAll('.flow-node-box')].filter((n) => n !== fromNode && lane.contains(n));
-      if (others.length === 1) toNode = others[0];
-    }
-    return toNode && toNode !== fromNode ? toNode : null;
-  }
-
   function addFlowNodeAt(lane, clientX, clientY) {
     if (!lane) return;
     pushTabHistory('flow');
@@ -4366,14 +4305,12 @@ function switchFlowSub(subId) {
     node.style.top = y + 'px';
     world.appendChild(node);
     placeFlowNodes(lane);
-    drawFlowArrows(lane);
     saveLocal();
     return node;
   }
 
   function enableFlowDrag() {
     document.querySelectorAll('#tab-flow .flow-step-lane, #tab-storyboard .flow-step-lane').forEach((lane) => {
-      lane.setAttribute('translate', 'no');
       placeFlowNodes(lane);
       if (lane.dataset.dragBound === '1') return;
       lane.dataset.dragBound = '1';
@@ -4391,16 +4328,11 @@ function switchFlowSub(subId) {
       };
       const drawTemp = (x, y) => {
         let svg = lane.querySelector('svg.flow-arrows');
-        if (!svg) {
-          drawFlowArrows(lane);
-          svg = lane.querySelector('svg.flow-arrows');
-        }
         if (!svg) return;
         svg.querySelectorAll('.flow-temp').forEach((el) => el.remove());
         lane.querySelectorAll('.flow-node-box.link-hot').forEach((n) => n.classList.remove('link-hot'));
         const hover = link.smart ? hoverNodeAt(x, y) : null;
         if (hover) hover.classList.add('link-hot');
-        link.hover = hover;
         if (link.smart) {
           const pt = clientToWorld(lane, x, y);
           const ports = guessConnectPorts(link.fromNode, hover || pt.x, hover ? undefined : pt.y);
@@ -4428,20 +4360,6 @@ function switchFlowSub(subId) {
           svg.appendChild(head);
         }
       };
-      const capturePtr = (el, id) => {
-        try { if (el && el.setPointerCapture) el.setPointerCapture(id); } catch (err) { /* iframe / lost down */ }
-      };
-      const nodeHitRect = (node) => {
-        const r = node.getBoundingClientRect();
-        if (r.width > 0 && r.height > 0) return r;
-        const z = getZoom(lane);
-        const lr = lane.getBoundingClientRect();
-        const w = (node.offsetWidth || 96) * z;
-        const h = (node.offsetHeight || 28) * z;
-        const x = lr.left + Number(lane.dataset.panX || 0) + Number(node.dataset.fx || 0) * z;
-        const y = lr.top + Number(lane.dataset.panY || 0) + Number(node.dataset.fy || 0) * z;
-        return { left: x, top: y, right: x + w, bottom: y + h };
-      };
       const updateMarquee = (event) => {
         if (!marquee) return;
         const lr = lane.getBoundingClientRect();
@@ -4457,58 +4375,35 @@ function switchFlowSub(subId) {
         marquee.el.style.height = h + 'px';
         const box = { left: lr.left + left, top: lr.top + top, right: lr.left + left + w, bottom: lr.top + top + h };
         lane.querySelectorAll('.flow-node-box').forEach((node) => {
-          const r = nodeHitRect(node);
+          const r = node.getBoundingClientRect();
           const hit = r.right >= box.left && r.left <= box.right && r.bottom >= box.top && r.top <= box.bottom;
           node.classList.toggle('selected', hit);
         });
       };
-      let ignoreMouse = 0;
-      const markPointer = (event) => {
-        if (event && String(event.type || '').indexOf('pointer') === 0) ignoreMouse = Date.now();
-      };
-      const isDupMouse = (event) => String(event.type || '').indexOf('mouse') === 0 && (Date.now() - ignoreMouse) < 80;
-      const onDown = (event) => {
-        if (isDupMouse(event)) return;
-        markPointer(event);
+      lane.addEventListener('pointerdown', (event) => {
         lastFlowPointer = { x: event.clientX, y: event.clientY };
         if (event.button !== 0 && event.button !== 1) return;
-        const target = flowEventEl(event);
-        if (!target) return;
-        if (target.closest('.flow-zoom-bar')) return;
-        const port = target.closest('.flow-port');
-        const node = target.closest('.flow-node-box');
-        const altOn = event.altKey || flowAltHeld;
-        const shiftOn = event.shiftKey || flowShiftHeld;
-        if (event.button === 0 && altOn && node && lane.contains(node)) {
-          event.preventDefault();
-          event.stopPropagation();
-          link = { fromNode: node, smart: true, fromPort: port && port.dataset.port ? port.dataset.port : 'r', toPort: 'l', cx: event.clientX, cy: event.clientY, dragged: false };
-          capturePtr(lane, event.pointerId);
-          return;
-        }
-        if (event.button === 0 && shiftOn) {
-          event.preventDefault();
-          event.stopPropagation();
-          const lr = lane.getBoundingClientRect();
-          const el = document.createElement('div');
-          el.className = 'flow-marquee';
-          lane.appendChild(el);
-          marquee = { el, x0: event.clientX - lr.left, y0: event.clientY - lr.top };
-          clearFlowSelection(lane);
-          capturePtr(lane, event.pointerId);
-          return;
-        }
+        const port = event.target.closest('.flow-port');
         if (port && event.button === 0 && !event.metaKey && !event.ctrlKey) {
-          const portNode = port.closest('.flow-node-box');
-          if (!portNode) return;
+          const node = port.closest('.flow-node-box');
+          if (!node) return;
           event.preventDefault();
           event.stopPropagation();
-          link = { fromNode: portNode, fromPort: port.dataset.port };
-          capturePtr(lane, event.pointerId);
+          link = { fromNode: node, fromPort: port.dataset.port };
+          lane.setPointerCapture(event.pointerId);
           return;
         }
+        if (event.target.closest('[contenteditable="true"]')) return;
+        const node = event.target.closest('.flow-node-box');
         const cmd = event.metaKey || event.ctrlKey;
         if (node && event.button === 0) {
+          if (event.altKey) {
+            event.preventDefault();
+            event.stopPropagation();
+            link = { fromNode: node, smart: true, fromPort: 'r', toPort: 'l' };
+            lane.setPointerCapture(event.pointerId);
+            return;
+          }
           if (cmd) {
             node.classList.toggle('selected');
             event.preventDefault();
@@ -4529,22 +4424,26 @@ function switchFlowSub(subId) {
           };
           movers.forEach((n) => n.classList.add('dragging'));
           event.preventDefault();
-          capturePtr(node, event.pointerId);
+          node.setPointerCapture(event.pointerId);
           return;
         }
         if (node) return;
+        if (event.target.closest('.flow-zoom-bar')) return;
         event.preventDefault();
         if (flowLineTool && event.button === 0) {
           const pt = clientToWorld(lane, event.clientX, event.clientY);
-          if (flowLineDraft) {
-            if (persistOrthoLine(flowLineDraft.lane || lane, flowLineDraft.x0, flowLineDraft.y0, pt.x, pt.y)) {
-              flowLineDraft = null;
-            }
-            return;
-          }
           flowLineDraft = { lane, x0: pt.x, y0: pt.y };
-          toast(t('끝점을 클릭하거나 드래그하세요.', 'Click the other end, or drag.'));
-          capturePtr(lane, event.pointerId);
+          lane.setPointerCapture(event.pointerId);
+          return;
+        }
+        if (event.shiftKey && event.button === 0) {
+          const lr = lane.getBoundingClientRect();
+          const el = document.createElement('div');
+          el.className = 'flow-marquee';
+          lane.appendChild(el);
+          marquee = { el, x0: event.clientX - lr.left, y0: event.clientY - lr.top };
+          clearFlowSelection(lane);
+          lane.setPointerCapture(event.pointerId);
           return;
         }
         clearFlowSelection(lane);
@@ -4555,24 +4454,16 @@ function switchFlowSub(subId) {
           cy: event.clientY
         };
         lane.classList.add('panning');
-        capturePtr(lane, event.pointerId);
-      };
-      const onMove = (event) => {
-        if (isDupMouse(event)) return;
-        markPointer(event);
+        lane.setPointerCapture(event.pointerId);
+      });
+      lane.addEventListener('pointermove', (event) => {
         lastFlowPointer = { x: event.clientX, y: event.clientY };
-        if (drag && (event.altKey || flowAltHeld) && drag.isolate && !link && !marquee) {
-          link = { fromNode: drag.isolate, smart: true, fromPort: 'r', toPort: 'l', cx: drag.cx, cy: drag.cy, dragged: true };
-          drag.nodes.forEach((item) => item.el.classList.remove('dragging'));
-          drag = null;
-        }
         if (flowLineDraft && flowLineDraft.lane === lane) {
           const pt = clientToWorld(lane, event.clientX, event.clientY);
           drawOrthoTemp(lane, flowLineDraft.x0, flowLineDraft.y0, pt.x, pt.y);
           return;
         }
         if (link) {
-          if (link.cx != null && Math.hypot(event.clientX - link.cx, event.clientY - link.cy) > 8) link.dragged = true;
           drawTemp(event.clientX, event.clientY);
           clearHot();
           if (!link.smart) {
@@ -4619,52 +4510,55 @@ function switchFlowSub(subId) {
           item.el.dataset.fy = String(y);
         });
         drawFlowArrows(lane);
-        placeFlowArrowHeaders(lane);
-      };
-      const onUp = (event) => {
-        if (isDupMouse(event)) return;
-        markPointer(event);
+      });
+      lane.addEventListener('pointerup', (event) => {
         lastFlowPointer = { x: event.clientX, y: event.clientY };
         if (flowLineDraft && flowLineDraft.lane === lane) {
           const pt = clientToWorld(lane, event.clientX, event.clientY);
-          if (persistOrthoLine(lane, flowLineDraft.x0, flowLineDraft.y0, pt.x, pt.y)) {
-            flowLineDraft = null;
-          }
+          persistOrthoLine(lane, flowLineDraft.x0, flowLineDraft.y0, pt.x, pt.y);
+          flowLineDraft = null;
           return;
         }
         if (link) {
+          let toNode = null;
+          let toPort = link.toPort;
           if (link.smart) {
-            persistSmartEdge(lane, link.fromNode, resolveLinkTarget(lane, link.fromNode, event.clientX, event.clientY, link.hover));
+            toNode = document.elementsFromPoint(event.clientX, event.clientY).map((el) => el.closest && el.closest('.flow-node-box')).find((n) => n && n !== link.fromNode && lane.contains(n));
+            if (toNode) {
+              const ports = guessConnectPorts(link.fromNode, toNode);
+              link.fromPort = ports.from;
+              toPort = ports.to;
+            }
           } else {
             const hit = document.elementsFromPoint(event.clientX, event.clientY).find((el) => el.classList && el.classList.contains('flow-port'));
-            const toNode = hit && hit.closest('.flow-node-box');
-            const toPort = hit && hit.dataset.port;
-            if (toNode && toNode !== link.fromNode && toPort) {
-              const edge = {
-                id: uid('e'),
-                from: ensureNodeId(link.fromNode),
-                fromPort: link.fromPort,
-                to: ensureNodeId(toNode),
-                toPort,
-                ortho: true
-              };
-              const edges = getEdges(lane);
-              if (!edges.some((e) => e.from === edge.from && e.fromPort === edge.fromPort && e.to === edge.to && e.toPort === edge.toPort)) {
-                pushTabHistory('flow');
-                edges.push(edge);
-                setEdges(lane, edges);
-              }
+            toNode = hit && hit.closest('.flow-node-box');
+            toPort = hit && hit.dataset.port;
+          }
+          if (toNode && toNode !== link.fromNode && toPort) {
+            const edge = {
+              id: uid('e'),
+              from: ensureNodeId(link.fromNode),
+              fromPort: link.fromPort,
+              to: ensureNodeId(toNode),
+              toPort,
+              ortho: true
+            };
+            const edges = getEdges(lane);
+            const dup = edges.some((e) => e.from === edge.from && e.fromPort === edge.fromPort && e.to === edge.to && e.toPort === edge.toPort);
+            if (!dup) {
+              pushTabHistory('flow');
+              edges.push(edge);
+              setEdges(lane, edges);
             }
-            drawFlowArrows(lane);
-            saveLocal();
           }
           lane.querySelectorAll('.flow-node-box.link-hot').forEach((n) => n.classList.remove('link-hot'));
           link = null;
           clearHot();
+          drawFlowArrows(lane);
+          saveLocal();
           return;
         }
         if (marquee) {
-          updateMarquee(event);
           marquee.el.remove();
           marquee = null;
           return;
@@ -4688,19 +4582,7 @@ function switchFlowSub(subId) {
           pushTabHistory('flow');
           saveLocal();
         }
-      };
-      lane.addEventListener('pointerdown', onDown, true);
-      lane.addEventListener('mousedown', onDown, true);
-      lane.addEventListener('pointermove', onMove, true);
-      lane.addEventListener('mousemove', onMove, true);
-      lane.addEventListener('pointerup', onUp, true);
-      lane.addEventListener('mouseup', onUp, true);
-      lane.addEventListener('pointercancel', onUp, true);
-      document.addEventListener('pointermove', onMove, true);
-      document.addEventListener('mousemove', onMove, true);
-      document.addEventListener('pointerup', onUp, true);
-      document.addEventListener('mouseup', onUp, true);
-      document.addEventListener('pointercancel', onUp, true);
+      });
       lane.addEventListener('wheel', (event) => {
         event.preventDefault();
         const panX = Number(lane.dataset.panX || 0);
@@ -4726,8 +4608,7 @@ function switchFlowSub(subId) {
       });
       lane.addEventListener('gestureend', () => { lane.dataset.gestureZoom = '1'; });
       lane.addEventListener('dblclick', (event) => {
-        const target = flowEventEl(event);
-        const node = target && target.closest('.flow-node-box');
+        const node = event.target.closest('.flow-node-box');
         if (node) {
           event.preventDefault();
           startFlowTextEdit(node);
@@ -4738,6 +4619,7 @@ function switchFlowSub(subId) {
       });
     });
   }
+
 
   function makeStoryCard() {
     const n = document.querySelectorAll('#tab-storyboard .story-card').length + 1;
@@ -5622,7 +5504,6 @@ function switchFlowSub(subId) {
     placeStoryBubblesOutsideFace,
     selectScreenCard
   };
-  window.enableFlowDrag = enableFlowDrag;
 
   const _origSwitch = window.switchMasterTab;
   window.switchMasterTab = function(tabId, btn) {
